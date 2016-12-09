@@ -21,6 +21,14 @@ func TestCreateCustomChartFromYaml(t *testing.T) {
 
 }
 
+
+func TestCreateCustomChartFromKube(t *testing.T) {
+
+
+}
+
+
+
 func TestResourceEmpty(t *testing.T) {
 	yamlData := `apiVersion: v1
 kind: Pod

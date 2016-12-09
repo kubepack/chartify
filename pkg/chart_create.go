@@ -568,3 +568,5 @@ func chartMetaData(name string) chart.Metadata {
 	}
 	return cfile
 }
+
+
