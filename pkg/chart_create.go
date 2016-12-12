@@ -28,7 +28,7 @@ func (c chartInfo) Create() (string, error) {
 	} else if !fi.IsDir() {
 		return path, fmt.Errorf("no such directory %s", path)
 	}
-	fmt.Printf("Creating custom Chart from yaml\n")
+	fmt.Printf("Creating Custom Chart...\n")
 	cdir := filepath.Join(path, chartfile.Name)
 	if fi, err := os.Stat(cdir); err == nil && !fi.IsDir() {
 		return cdir, fmt.Errorf("file %s already exists and is not a directory", cdir)
@@ -70,7 +70,6 @@ func (c chartInfo) Create() (string, error) {
 			template, values = podTemplate(pod)
 			valueFile[name] = values.value
 			persistence = addPersistence(persistence, values.persistence)
-
 		} else if resourceType.Kind == "ReplicationController" {
 			rc := kubeapi.ReplicationController{}
 			err = yaml.Unmarshal([]byte(yamlData), &rc)
@@ -83,7 +82,6 @@ func (c chartInfo) Create() (string, error) {
 			valueFile[name] = values.value
 			persistence = values.persistence
 		} else if resourceType.Kind == "Deployment" {
-
 			deployment := ext.Deployment{}
 			err = yaml.Unmarshal([]byte(yamlData), &deployment)
 			name := deployment.Name
@@ -105,9 +103,7 @@ func (c chartInfo) Create() (string, error) {
 			template, values = jobTemplate(job)
 			valueFile[name] = values.value
 			persistence = values.persistence
-
 		} else if resourceType.Kind == "DaemonSet" {
-
 			daemonset := ext.DaemonSet{}
 			err = yaml.Unmarshal([]byte(yamlData), &daemonset)
 			if err != nil {
@@ -119,7 +115,6 @@ func (c chartInfo) Create() (string, error) {
 			valueFile[name] = values.value
 			persistence = values.persistence
 		} else if resourceType.Kind == "ReplicaSet" {
-
 			rcSet := ext.ReplicaSet{}
 			err = yaml.Unmarshal([]byte(yamlData), &rcSet)
 			if err != nil {
@@ -131,7 +126,6 @@ func (c chartInfo) Create() (string, error) {
 			valueFile[name] = values.value
 			persistence = values.persistence
 		} else if resourceType.Kind == "PetSet" {
-
 			petset := apps.PetSet{}
 			err := yaml.Unmarshal([]byte(yamlData), &petset)
 			if err != nil {
@@ -143,7 +137,6 @@ func (c chartInfo) Create() (string, error) {
 			valueFile[name] = values.value
 			persistence = values.persistence
 		} else if resourceType.Kind == "Service" {
-
 			service := kubeapi.Service{}
 			err := yaml.Unmarshal([]byte(yamlData), &service)
 			if err != nil {
@@ -165,7 +158,6 @@ func (c chartInfo) Create() (string, error) {
 			template, values = configMapTemplate(configMap)
 			valueFile[name] = values.value
 		} else if resourceType.Kind == "Secret" {
-
 			secret := kubeapi.Secret{}
 			err := yaml.Unmarshal([]byte(yamlData), &secret)
 			if err != nil {
@@ -176,7 +168,6 @@ func (c chartInfo) Create() (string, error) {
 			template, values = secretTemplate(secret)
 			valueFile[name] = values.value
 		} else if resourceType.Kind == "PersistentVolumeClaim" {
-
 			pvc := kubeapi.PersistentVolumeClaim{}
 			err := yaml.Unmarshal([]byte(yamlData), &pvc)
 			if err != nil {
@@ -198,7 +189,6 @@ func (c chartInfo) Create() (string, error) {
 			template, values = pvTemplate(pv)
 			valueFile[name] = values.value
 		} else if resourceType.Kind == "StorageClass" {
-
 			storageClass := storage.StorageClass{}
 			err := yaml.Unmarshal([]byte(yamlData), &storageClass)
 			if err != nil {
@@ -210,7 +200,6 @@ func (c chartInfo) Create() (string, error) {
 			valueFile[name] = values.value
 
 		} else {
-
 			fmt.Printf("NOT IMPLEMENTED. ADD MAUALLY ")
 		}
 		err = ioutil.WriteFile(templateName, []byte(template), 0644)
@@ -232,6 +221,9 @@ func (c chartInfo) Create() (string, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	fmt.Println("CREATE : SUCCESSFULL")
+
 	return cdir, nil
 }
 
@@ -567,5 +559,3 @@ func chartMetaData(name string) chart.Metadata {
 	}
 	return cfile
 }
-
-

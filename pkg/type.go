@@ -52,7 +52,6 @@ var (
 
 type objects struct {
 	kubeContext            string
-	namespace              string
 	pods                   []string
 	replicationControllers []string
 	configMaps             []string

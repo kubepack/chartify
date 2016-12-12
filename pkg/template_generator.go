@@ -10,7 +10,6 @@ import (
 	"log"
 	"reflect"
 	"strings"
-
 )
 
 func generateObjectMetaTemplate(objectMeta kubeapi.ObjectMeta, key string, value map[string]interface{}, extraTagForName string) kubeapi.ObjectMeta {
@@ -60,7 +59,7 @@ func generateTemplateForPodSpec(podSpec kubeapi.PodSpec, key string, value map[s
 	}
 	if len(podSpec.ServiceAccountName) != 0 {
 		value["ServiceAccountName"] = podSpec.ServiceAccountName
-		podSpec.ServiceAccountName = fmt.Sprintf("{{.values%s.ServiceAccountName}}", key)
+		podSpec.ServiceAccountName = fmt.Sprintf("{{.Values%s.ServiceAccountName}}", key)
 	}
 	return podSpec
 }
@@ -228,6 +227,8 @@ func generateTemplateForVolume(volumes []kubeapi.Volume, key string, value map[s
 		}
 		if len(ifCondition) != 0 {
 			partialvolumeTemplate = partialVolumeTemplate(string(volumeData), ifCondition)
+		} else {
+			partialvolumeTemplate = string(volumeData)
 		}
 		volumeTemplate = volumeTemplate + partialvolumeTemplate
 	}
@@ -245,7 +246,7 @@ func generateTemplateForContainer(containers []kubeapi.Container, key string, va
 		container.Image = addTemplateImageValue(containerName, container.Image, key, containterValue)
 		if len(container.ImagePullPolicy) != 0 {
 			containterValue["ImagePullPolicy"] = string(container.ImagePullPolicy)
-			container.ImagePullPolicy = kubeapi.PullPolicy(addContainerValue(containerName, key, "imagePullPolicy"))
+			container.ImagePullPolicy = kubeapi.PullPolicy(addContainerValue(key, containerName, "imagePullPolicy"))
 		}
 		if len(container.Env) != 0 {
 			for k, v := range container.Env {
