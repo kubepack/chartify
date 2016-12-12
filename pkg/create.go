@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"github.com/spf13/cobra"
-
 	"io/ioutil"
 	"log"
 	"os"
@@ -16,19 +15,16 @@ func CreateChart() *cobra.Command {
 		Short: "chartify create",
 		Run: func(cmd *cobra.Command, args []string) {
 			chartData := chartInfo{
-				location:  location,
+				location:  checkLocation(location),
 				dir:       dir,
 				chartName: chartName,
 			}
 			if len(dir) != 0 {
-				chartData.yamlFiles =  readLocalFiles(dir)
-				location = checkLocation(location)
-
-				chartData.Create()
+				chartData.yamlFiles = readLocalFiles(dir)
 			} else {
 				chartData.yamlFiles = kubeObjects.makeYamlListFromKube()
-
 			}
+			chartData.Create()
 		},
 	}
 	cmd.Flags().StringVar(&dir, "dir", "", "specify the directory of the yaml files")
@@ -36,16 +32,17 @@ func CreateChart() *cobra.Command {
 	cmd.Flags().StringVar(&chartName, "chart_name", "", "specify the chart name")
 	cmd.Flags().StringVar(&kubeObjects.kubeContext, "kube_context", "", "specify the kube context name")
 	cmd.Flags().StringVar(&kubeObjects.namespace, "namespace", "default", "specify the namespace for the selected objects")
-	cmd.Flags().StringArrayVar(&kubeObjects.pods,"pods",kubeObjects.pods,"specify the names of pods to incluse them in chart")
+	cmd.Flags().StringArrayVar(&kubeObjects.pods, "pods", kubeObjects.pods, "specify the names of pods to incluse them in chart")
 	cmd.Flags().StringArrayVar(&kubeObjects.replicationControllers, "replicationControllers", kubeObjects.replicationControllers, "specify the names if pods to include them in chart")
 	cmd.Flags().StringArrayVar(&kubeObjects.services, "services", kubeObjects.services, "specify the names of services to include them in chart")
 	cmd.Flags().StringArrayVar(&kubeObjects.configMaps, "config_maps", kubeObjects.configMaps, "specify the names of secrets to include them in chart")
 	cmd.Flags().StringArrayVar(&kubeObjects.configMaps, "secrets", kubeObjects.configMaps, "specify the names of secrets to include them in chart")
 	cmd.Flags().StringArrayVar(&kubeObjects.persistentVolume, "pv", kubeObjects.persistentVolume, "specify names of persistent volumes")
-	cmd.Flags().StringArrayVar(&kubeObjects.persistentVolumeClaim,"pvc", kubeObjects.persistentVolumeClaim, "specify names of persistent volume claim")
-	cmd.Flags().StringArrayVar(&kubeObjects.petsets, "petsets", kubeObjects.petsets, "specify specify names of petsets")
+	cmd.Flags().StringArrayVar(&kubeObjects.persistentVolumeClaim, "pvc", kubeObjects.persistentVolumeClaim, "specify names of persistent volume claim")
+	cmd.Flags().StringArrayVar(&kubeObjects.petsets, "petsets", kubeObjects.petsets, "specify names of petsets")
 	cmd.Flags().StringArrayVar(&kubeObjects.jobs, "jobs", kubeObjects.jobs, "specify names of jobs")
-	cmd.Flags().StringArrayVar(&kubeObjects.daemons)
+	cmd.Flags().StringArrayVar(&kubeObjects.replicaSet, "replica_sets", kubeObjects.replicaSet, "specify names of replica sets")
+	cmd.Flags().StringArrayVar(&kubeObjects.daemons, "daemons", kubeObjects.daemons, "specify names of daemon sets")
 
 	return cmd
 }
@@ -80,7 +77,7 @@ func readLocalFiles(dirName string) []string {
 	return yamlFiles
 }
 
-func (kubeObjects objects)makeYamlListFromKube() []string {
+func (kubeObjects objects) makeYamlListFromKube() []string {
 	kubeClient, err := NewKubeClient(kubeObjects.kubeContext)
 	if err != nil {
 		log.Fatal(err)

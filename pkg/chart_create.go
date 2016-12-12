@@ -65,7 +65,6 @@ func (c chartInfo) Create() (string, error) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			//valueFile[k] = values
 			name := pod.Name
 			templateName = filepath.Join(templateLocation, name+"-pod.yaml")
 			template, values = podTemplate(pod)

@@ -63,6 +63,7 @@ type objects struct {
 	petsets                []string
 	jobs                   []string
 	daemons                []string
+	replicaSet             []string
 }
 
 type chartInfo struct {
