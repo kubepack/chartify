@@ -4,8 +4,10 @@ import (
 	"github.com/ghodss/yaml"
 	kubeapi "k8s.io/kubernetes/pkg/api"
 	client "k8s.io/kubernetes/pkg/client/unversioned"
+	"k8s.io/kubernetes/pkg/apis/extensions"
 	"log"
 	"strings"
+	"k8s.io/kubernetes/pkg/apis/apps"
 )
 
 func (kubeObjects objects) readKubernetesObjects(kubeClient *client.Client) []string {
@@ -72,7 +74,7 @@ func (kubeObjects objects) getPodsYamlList(kubeClient *client.Client) []string {
 		if pod.APIVersion == "" {
 			pod.APIVersion = ref.APIVersion
 		}
-		pod.Status = kubeapi.PodStatus{} //TODO check
+		pod.Status = kubeapi.PodStatus{}
 		dataByte, err := yaml.Marshal(pod)
 		yamlFiles = append(yamlFiles, string(dataByte))
 		if err != nil {
@@ -100,6 +102,7 @@ func (kubeObjects objects) getReplicationControllerYamlList(kubeClient *client.C
 		if rc.APIVersion == "" {
 			rc.APIVersion = ref.APIVersion
 		}
+		rc.Status = kubeapi.ReplicationControllerStatus{}
 		dataByte, err := yaml.Marshal(rc)
 		yamlFiles = append(yamlFiles, string(dataByte))
 		if err != nil {
@@ -124,6 +127,7 @@ func (kubeObjects objects) getServicesYamlList(kubeClient *client.Client) []stri
 		if service.APIVersion == "" {
 			service.APIVersion = ref.APIVersion
 		}
+		service.Status = kubeapi.ServiceStatus{}
 		dataByte, err := yaml.Marshal(service)
 		yamlFiles = append(yamlFiles, string(dataByte))
 		if err != nil {
@@ -193,9 +197,10 @@ func (kubeObjects objects) getPetSetsYamlList(kubeClient *client.Client) []strin
 		if petset.Kind == "" {
 			petset.Kind = ref.Kind
 		}
-		if petset.APIVersion == "" {
-			petset.APIVersion = ref.APIVersion
+		if len(petset.APIVersion) == 0 {
+			petset.APIVersion = makerApiVersion(petset.GetSelfLink())
 		}
+		petset.Status = apps.PetSetStatus{}
 		dataByte, err := yaml.Marshal(petset)
 		yamlFiles = append(yamlFiles, string(dataByte))
 		if err != nil {
@@ -282,8 +287,9 @@ func (kubeObjects objects) getDaemonsYamlList(kubeClient *client.Client) []strin
 			daemon.Kind = ref.Kind
 		}
 		if daemon.APIVersion == "" {
-			daemon.APIVersion = ref.APIVersion
+			daemon.APIVersion = makerApiVersion(daemon.GetSelfLink())
 		}
+		daemon.Status = extensions.DaemonSetStatus{}
 		dataByte, err := yaml.Marshal(daemon)
 		yamlFiles = append(yamlFiles, string(dataByte))
 		if err != nil {
@@ -304,10 +310,20 @@ func splitnamespace(s string) (string, string) {
 	str := strings.Split(s, ".")
 	if len(str) == 2 {
 		return str[0], str[1]
-	}else if len(str) < 2 {
-		log.Fatal("Namespace not given")
+	}else if len(str) == 1 {
+		return str[0], "default"
 	}else {
-		log.Fatal("Can not detect Namespace")
+		log.Fatal("ERROR : Can not detect Namespace")
 	}
 	return "",""
+}
+
+func makerApiVersion(selfLink  string) string {
+	str := strings.Split(selfLink, "/")
+	if len(str) >2 {
+		return (str[2] + "/" + str[3])
+	}else {
+		log.Fatal("api version not found")
+	}
+	return ""
 }

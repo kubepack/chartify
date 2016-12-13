@@ -132,7 +132,7 @@ func (c chartInfo) Create() (string, error) {
 				log.Fatal(err)
 			}
 			name := petset.Name
-			templateName = filepath.Join(templateLocation, name+"petset.yaml")
+			templateName = filepath.Join(templateLocation, name+"-petset.yaml")
 			template, values = petsetTemplate(petset)
 			valueFile[name] = values.value
 			persistence = values.persistence
@@ -144,7 +144,7 @@ func (c chartInfo) Create() (string, error) {
 			}
 			template, values = serviceTemplate(service)
 			name := service.Name
-			templateName = filepath.Join(templateLocation, name+"svc.yaml")
+			templateName = filepath.Join(templateLocation, name+"-svc.yaml")
 			valueFile[name] = values.value
 			persistence = values.persistence
 		} else if resourceType.Kind == "ConfigMap" {
@@ -232,7 +232,7 @@ func podTemplate(pod kubeapi.Pod) (string, valueFileGenerator) {
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
 	key := pod.ObjectMeta.Name
-	pod.ObjectMeta = generateObjectMetaTemplate(pod.ObjectMeta, key, value, "")
+	pod.ObjectMeta = generateObjectMetaTemplate(pod.ObjectMeta, key, value,  pod.ObjectMeta.Name)
 	//pod.Spec.Containers = generateTemplateForContainer(pod.Spec.Containers, value)
 	pod.Spec = generateTemplateForPodSpec(pod.Spec, key, value)
 	if len(pod.Spec.Volumes) != 0 {
@@ -263,7 +263,7 @@ func replicationControllerTemplate(rc kubeapi.ReplicationController) (string, va
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
 	key := rc.ObjectMeta.Name
-	rc.ObjectMeta = generateObjectMetaTemplate(rc.ObjectMeta, key, value, "")
+	rc.ObjectMeta = generateObjectMetaTemplate(rc.ObjectMeta, key, value, rc.ObjectMeta.Name)
 	rc.Spec.Template.Spec = generateTemplateForPodSpec(rc.Spec.Template.Spec, key, value)
 	if len(rc.Spec.Template.Spec.Volumes) != 0 {
 		volumes, persistence = generateTemplateForVolume(rc.Spec.Template.Spec.Volumes, key, value)
@@ -289,7 +289,7 @@ func replicaSetTemplate(replicaSet ext.ReplicaSet) (string, valueFileGenerator) 
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
 	key := replicaSet.ObjectMeta.Name
-	replicaSet.ObjectMeta = generateObjectMetaTemplate(replicaSet.ObjectMeta, key, value, "")
+	replicaSet.ObjectMeta = generateObjectMetaTemplate(replicaSet.ObjectMeta, key, value, replicaSet.ObjectMeta.Name)
 	replicaSet.Spec.Template.Spec = generateTemplateForPodSpec(replicaSet.Spec.Template.Spec, key, value)
 	if len(replicaSet.Spec.Template.Spec.Volumes) != 0 {
 		volumes, persistence = generateTemplateForVolume(replicaSet.Spec.Template.Spec.Volumes, key, value)
@@ -318,7 +318,7 @@ func deploymentTemplate(deployment ext.Deployment) (string, valueFileGenerator) 
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
 	name := deployment.ObjectMeta.Name
-	deployment.ObjectMeta = generateObjectMetaTemplate(deployment.ObjectMeta, name, value, "")
+	deployment.ObjectMeta = generateObjectMetaTemplate(deployment.ObjectMeta, name, value, deployment.ObjectMeta.Name)
 	deployment.Spec.Template.Spec = generateTemplateForPodSpec(deployment.Spec.Template.Spec, name, value)
 	if len(deployment.Spec.Template.Spec.Volumes) != 0 {
 		volumes, persistence = generateTemplateForVolume(deployment.Spec.Template.Spec.Volumes, name, value)
@@ -350,7 +350,7 @@ func daemonsetTemplate(daemonset ext.DaemonSet) (string, valueFileGenerator) {
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
 	key := daemonset.ObjectMeta.Name
-	daemonset.ObjectMeta = generateObjectMetaTemplate(daemonset.ObjectMeta, key, value, "")
+	daemonset.ObjectMeta = generateObjectMetaTemplate(daemonset.ObjectMeta, key, value, daemonset.ObjectMeta.Name)
 	daemonset.Spec.Template.Spec = generateTemplateForPodSpec(daemonset.Spec.Template.Spec, key, value)
 	if len(daemonset.Spec.Template.Spec.Volumes) != 0 {
 		volumes, persistence = generateTemplateForVolume(daemonset.Spec.Template.Spec.Volumes, key, value)
@@ -381,10 +381,10 @@ func petsetTemplate(petset apps.PetSet) (string, valueFileGenerator) {
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
 	key := petset.ObjectMeta.Name
-	petset.ObjectMeta = generateObjectMetaTemplate(petset.ObjectMeta, key, value, "")
+	petset.ObjectMeta = generateObjectMetaTemplate(petset.ObjectMeta, key, value, petset.ObjectMeta.Name)
 	if len(petset.Spec.ServiceName) != 0 {
-		petset.Spec.ServiceName = fmt.Sprintf("{{.Values.%s.ServiceName}}", petset.ObjectMeta.Name)
-		value[key] = petset.Spec.ServiceName //generateTemplateForSingleValue(petset.Spec.ServiceName, "ServiceName", value)
+		petset.Spec.ServiceName = fmt.Sprintf("{{.Values.%s.ServiceName}}",key)
+		value["ServiceName"] = petset.Spec.ServiceName //generateTemplateForSingleValue(petset.Spec.ServiceName, "ServiceName", value)
 	}
 	petset.Spec.Template.Spec = generateTemplateForPodSpec(petset.Spec.Template.Spec, key, value)
 	if len(petset.Spec.Template.Spec.Volumes) != 0 {
@@ -410,7 +410,7 @@ func jobTemplate(job batch.Job) (string, valueFileGenerator) {
 	persistence := make(map[string]interface{}, 0)
 	value := make(map[string]interface{}, 0)
 	key := job.ObjectMeta.Name
-	job.ObjectMeta = generateObjectMetaTemplate(job.ObjectMeta, key, value, "")
+	job.ObjectMeta = generateObjectMetaTemplate(job.ObjectMeta, key, value, job.ObjectMeta.Name)
 	job.Spec.Template.Spec = generateTemplateForPodSpec(job.Spec.Template.Spec, key, value)
 	if len(job.Spec.Template.Spec.Volumes) != 0 {
 		volumes, persistence = generateTemplateForVolume(job.Spec.Template.Spec.Volumes, key, value)
@@ -435,7 +435,7 @@ func jobTemplate(job batch.Job) (string, valueFileGenerator) {
 func serviceTemplate(svc kubeapi.Service) (string, valueFileGenerator) {
 	value := make(map[string]interface{}, 0)
 	key := svc.ObjectMeta.Name
-	svc.ObjectMeta = generateObjectMetaTemplate(svc.ObjectMeta, key, value, "")
+	svc.ObjectMeta = generateObjectMetaTemplate(svc.ObjectMeta, key, value, svc.ObjectMeta.Name)
 	svc.Spec = generateServiceSpecTemplate(svc.Spec, key, value)
 	svcData, err := yaml.Marshal(svc)
 	if err != nil {
@@ -447,7 +447,7 @@ func serviceTemplate(svc kubeapi.Service) (string, valueFileGenerator) {
 func configMapTemplate(configMap kubeapi.ConfigMap) (string, valueFileGenerator) {
 	value := make(map[string]interface{}, 0)
 	key := configMap.ObjectMeta.Name
-	configMap.ObjectMeta = generateObjectMetaTemplate(configMap.ObjectMeta, key, value, "")
+	configMap.ObjectMeta = generateObjectMetaTemplate(configMap.ObjectMeta, key, value, configMap.ObjectMeta.Name)
 	configMapData, err := yaml.Marshal(configMap)
 	if err != nil {
 		log.Fatal(err)
@@ -465,7 +465,7 @@ func secretTemplate(secret kubeapi.Secret) (string, valueFileGenerator) {
 	value := make(map[string]interface{}, 0)
 	secretDataMap := make(map[string]interface{}, 0)
 	key := secret.ObjectMeta.Name
-	secret.ObjectMeta = generateObjectMetaTemplate(secret.ObjectMeta, key, value, key)
+	secret.ObjectMeta = generateObjectMetaTemplate(secret.ObjectMeta, key, value, secret.ObjectMeta.Name)
 	if len(secret.Data) != 0 {
 		for k, v := range secret.Data {
 			value[k] = v
@@ -518,7 +518,7 @@ func pvTemplate(pv kubeapi.PersistentVolume) (string, valueFileGenerator) {
 func storageClassTemplate(storageClass storage.StorageClass) (string, valueFileGenerator) {
 	value := make(map[string]interface{}, 0)
 	key := storageClass.ObjectMeta.Name
-	storageClass.ObjectMeta = generateObjectMetaTemplate(storageClass.ObjectMeta, key, value, "")
+	storageClass.ObjectMeta = generateObjectMetaTemplate(storageClass.ObjectMeta, key, value, storageClass.ObjectMeta.Name)
 	value["Provisioner"] = storageClass.Provisioner
 	storageClass.Provisioner = fmt.Sprintf("{{.Values.%s.Provisioner}}", storageClass.ObjectMeta.Name)
 	//storageClass.Parameters = TODO sauman map conversion

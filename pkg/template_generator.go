@@ -81,6 +81,8 @@ func generateTemplateForVolume(volumes []kubeapi.Volume, key string, value map[s
 			ifCondition = buildIfConditionForVolume(volume.Name)
 			volume.PersistentVolumeClaim.ClaimName = fmt.Sprintf(`{{template "fullname"}}-%s`, volume.PersistentVolumeClaim.ClaimName)
 		} else if volume.ConfigMap != nil {
+/*			l, _ := yaml.Marshal(volume.ConfigMap)
+			fmt.Println(string(l))*/
 			volume.ConfigMap.Name = fmt.Sprintf(`{{ template "fullname" . }}-%s`, volume.ConfigMap.Name) // TODO if config map is deployed by helm map name will be like that
 		} else if volume.Secret != nil {
 			volume.Secret.SecretName = fmt.Sprintf(`{{ template "fullname" . }}-%s`, volume.Secret.SecretName) // TODO if secret is deployed by helm map name will be like that
@@ -229,6 +231,9 @@ func generateTemplateForVolume(volumes []kubeapi.Volume, key string, value map[s
 			partialvolumeTemplate = partialVolumeTemplate(string(volumeData), ifCondition)
 		} else {
 			partialvolumeTemplate = string(volumeData)
+
+
+
 		}
 		volumeTemplate = volumeTemplate + partialvolumeTemplate
 	}
@@ -256,6 +261,7 @@ func generateTemplateForContainer(containers []kubeapi.Container, key string, va
 					key := checkKeyValue(key)
 					container.Env[k].Value = fmt.Sprintf("{{.Values%s.%s.%s}}", key, container.Name, tmp) //TODO test
 				}
+				// Secret of Configmap has to be deployed by chart. else value from wont work.
 				if v.ValueFrom != nil {
 					if v.ValueFrom.ConfigMapKeyRef != nil {
 						container.Env[k].ValueFrom.ConfigMapKeyRef.Name = fmt.Sprintf(`{{ template "fullname" . }}-%s`, v.ValueFrom.ConfigMapKeyRef.Name)
@@ -545,13 +551,12 @@ func generateServiceSpecTemplate(svc kubeapi.ServiceSpec, key string, value map[
 	}
 	if len(string(svc.Type)) != 0 {
 		value["ServiceType"] = string(svc.Type)
-		svc.Type = kubeapi.ServiceType("{{.Values%s.ServiceType}}")
+		svc.Type = kubeapi.ServiceType(fmt.Sprintf("{{.Values%s.ServiceType}}", key))
 	}
 	if len(string(svc.SessionAffinity)) != 0 {
 		value["SessionAffinity"] = string(svc.SessionAffinity)
-		svc.SessionAffinity = kubeapi.ServiceAffinity("{{.Values%s.SessionAffinity}}")
+		svc.SessionAffinity = kubeapi.ServiceAffinity(fmt.Sprintf("{{.Values%s.SessionAffinity}}", key))
 	}
-
 	return svc
 }
 
