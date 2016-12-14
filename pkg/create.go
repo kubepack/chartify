@@ -49,7 +49,8 @@ func CreateChart() *cobra.Command {
 	cmd.Flags().StringSliceVar(&kubeObjects.petsets, "petsets", kubeObjects.petsets, "specify names of petsets(petset_name.namespace)")
 	cmd.Flags().StringSliceVar(&kubeObjects.jobs, "jobs", kubeObjects.jobs, "specify names of jobs")
 	cmd.Flags().StringSliceVar(&kubeObjects.replicaSet, "replica_sets", kubeObjects.replicaSet, "specify names of replica sets(replicaset_name.namespace)")
-	cmd.Flags().StringSliceVar(&kubeObjects.daemons, "daemons", kubeObjects.daemons, "specify names of daemon sets")
+	cmd.Flags().StringSliceVar(&kubeObjects.daemons, "daemons", kubeObjects.daemons, "specify names of daemon sets(daemons.namespace)")
+	cmd.Flags().StringSliceVar(&kubeObjects.storageClasses, "storage", kubeObjects.storageClasses, "")
 
 	return cmd
 }

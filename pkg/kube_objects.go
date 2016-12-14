@@ -3,11 +3,12 @@ package pkg
 import (
 	"github.com/ghodss/yaml"
 	kubeapi "k8s.io/kubernetes/pkg/api"
-	client "k8s.io/kubernetes/pkg/client/unversioned"
+	"k8s.io/kubernetes/pkg/apis/apps"
+	"k8s.io/kubernetes/pkg/apis/batch"
 	"k8s.io/kubernetes/pkg/apis/extensions"
+	client "k8s.io/kubernetes/pkg/client/unversioned"
 	"log"
 	"strings"
-	"k8s.io/kubernetes/pkg/apis/apps"
 )
 
 func (kubeObjects objects) readKubernetesObjects(kubeClient *client.Client) []string {
@@ -44,13 +45,17 @@ func (kubeObjects objects) readKubernetesObjects(kubeClient *client.Client) []st
 		pvcFiles := kubeObjects.getPersistentVolumeClaimYamlList(kubeClient)
 		yamlFiles = appendSlice(yamlFiles, pvcFiles)
 	}
-	/*	if len(kubeObjects.jobs) != 0 {  //TODO sauman
+	if len(kubeObjects.jobs) != 0 { //TODO sauman
 		jobFiles := kubeObjects.getJobsyamlList(kubeClient)
 		yamlFiles = appendSlice(yamlFiles, jobFiles)
-	}*/
+	}
 	if len(kubeObjects.daemons) != 0 {
 		daemonFiles := kubeObjects.getDaemonsYamlList(kubeClient)
 		yamlFiles = appendSlice(yamlFiles, daemonFiles)
+	}
+	if len(kubeObjects.storageClasses) != 0 {
+		storageClassFiles := kubeObjects.getStorageClassYamlList(kubeClient)
+		yamlFiles = appendSlice(yamlFiles, storageClassFiles)
 	}
 
 	return yamlFiles
@@ -198,7 +203,7 @@ func (kubeObjects objects) getPetSetsYamlList(kubeClient *client.Client) []strin
 			petset.Kind = ref.Kind
 		}
 		if len(petset.APIVersion) == 0 {
-			petset.APIVersion = makerApiVersion(petset.GetSelfLink())
+			petset.APIVersion = makeApiVersion(petset.GetSelfLink())
 		}
 		petset.Status = apps.PetSetStatus{}
 		dataByte, err := yaml.Marshal(petset)
@@ -257,25 +262,33 @@ func (kubeObjects objects) getPersistentVolumeClaimYamlList(kubeClient *client.C
 	return yamlFiles
 }
 
-/*
 func (kubeObjects objects) getJobsyamlList(kubeClient *client.Client) []string {
-	var yamlFiles []string
-	for k, v := range kubeObjects.jobs {
-		job, err := kubeClient.Jobs(kubeObjects.namespace).Get(v)
+	var jobFiles []string
+	for _, v := range kubeObjects.jobs {
+		objectName, namespace := splitnamespace(v)
+		job, err := kubeClient.Extensions().Jobs(namespace).Get(objectName)
 		if err != nil {
 			log.Fatal(err)
 		}
+		ref, err := kubeapi.GetReference(job)
+		if job.Kind == "" {
+			job.Kind = ref.Kind
+		}
+		if job.APIVersion == "" {
+			job.APIVersion = makeApiVersion(job.GetSelfLink())
+		}
+		job.Status = batch.JobStatus{}
 		dataByte, err := yaml.Marshal(job)
-		yamlFiles[k] = string(dataByte)
+		jobFiles = append(jobFiles, string(dataByte))
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
-	return yamlFiles
-}*/
+	return jobFiles
+}
 
 func (kubeObjects objects) getDaemonsYamlList(kubeClient *client.Client) []string {
-	var yamlFiles []string
+	var daemonFiles []string
 	for _, v := range kubeObjects.daemons {
 		objectName, namespace := splitnamespace(v)
 		daemon, err := kubeClient.ExtensionsClient.DaemonSets(namespace).Get(objectName)
@@ -287,16 +300,44 @@ func (kubeObjects objects) getDaemonsYamlList(kubeClient *client.Client) []strin
 			daemon.Kind = ref.Kind
 		}
 		if daemon.APIVersion == "" {
-			daemon.APIVersion = makerApiVersion(daemon.GetSelfLink())
+			daemon.APIVersion = makeApiVersion(daemon.GetSelfLink())
 		}
 		daemon.Status = extensions.DaemonSetStatus{}
 		dataByte, err := yaml.Marshal(daemon)
-		yamlFiles = append(yamlFiles, string(dataByte))
 		if err != nil {
 			log.Fatal(err)
 		}
+		daemonFiles = append(daemonFiles, string(dataByte))
+
 	}
-	return yamlFiles
+	return daemonFiles
+}
+
+func (kubeObjects objects) getStorageClassYamlList(kubeClient *client.Client) []string {
+	var storageFiles []string
+	for _, v := range kubeObjects.storageClasses {
+		//objectsName, namespace := splitnamespace(v)
+		storageClass, err := kubeClient.StorageClasses().Get(v)
+		if err != nil {
+			log.Fatal(err)
+		}
+		ref, err := kubeapi.GetReference(storageClass)
+		if storageClass.Kind == "" {
+			storageClass.Kind = ref.Kind
+		}
+		if storageClass.APIVersion == "" {
+			storageClass.APIVersion = makeApiVersion(storageClass.GetSelfLink())
+		}
+		dataByte, err := yaml.Marshal(storageClass)
+		if err != nil {
+			log.Fatal(err)
+		}
+		storageFiles = append(storageFiles, string(dataByte))
+
+	}
+
+	return storageFiles
+
 }
 
 func appendSlice(mainSlice []string, subSlice []string) []string {
@@ -310,19 +351,19 @@ func splitnamespace(s string) (string, string) {
 	str := strings.Split(s, ".")
 	if len(str) == 2 {
 		return str[0], str[1]
-	}else if len(str) == 1 {
+	} else if len(str) == 1 {
 		return str[0], "default"
-	}else {
+	} else {
 		log.Fatal("ERROR : Can not detect Namespace")
 	}
-	return "",""
+	return "", ""
 }
 
-func makerApiVersion(selfLink  string) string {
+func makeApiVersion(selfLink string) string {
 	str := strings.Split(selfLink, "/")
-	if len(str) >2 {
+	if len(str) > 2 {
 		return (str[2] + "/" + str[3])
-	}else {
+	} else {
 		log.Fatal("api version not found")
 	}
 	return ""

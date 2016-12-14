@@ -1,0 +1,20 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  labels:
+    app: datastore
+  name: datastore
+spec:
+  template:
+    metadata:
+      labels:
+        app: datastore-shard
+    spec:
+      nodeSelector:
+        app: datastore-node
+      containers:
+      - name: datastore-shard
+        image: kubernetes/sharded
+        ports:
+          - containerPort: 9042
+            name: main

@@ -16,7 +16,6 @@ func generateObjectMetaTemplate(objectMeta kubeapi.ObjectMeta, key string, value
 
 	key = checkKeyValue(key)
 	if len(objectMeta.Name) != 0 {
-		//value["Name"] = objectMeta.Name
 		objectMeta.Name = fmt.Sprintf(`{{ template "fullname" . }}`)
 	}
 	if len(extraTagForName) != 0 {
@@ -81,11 +80,9 @@ func generateTemplateForVolume(volumes []kubeapi.Volume, key string, value map[s
 			ifCondition = buildIfConditionForVolume(volume.Name)
 			volume.PersistentVolumeClaim.ClaimName = fmt.Sprintf(`{{template "fullname"}}-%s`, volume.PersistentVolumeClaim.ClaimName)
 		} else if volume.ConfigMap != nil {
-/*			l, _ := yaml.Marshal(volume.ConfigMap)
-			fmt.Println(string(l))*/
-			volume.ConfigMap.Name = fmt.Sprintf(`{{ template "fullname" . }}-%s`, volume.ConfigMap.Name) // TODO if config map is deployed by helm map name will be like that
+			//volume.ConfigMap.Name = fmt.Sprintf(`{{ template "fullname" . }}-%s`, volume.ConfigMap.Name) // TODO if config map is deployed by helm map name will be like that
 		} else if volume.Secret != nil {
-			volume.Secret.SecretName = fmt.Sprintf(`{{ template "fullname" . }}-%s`, volume.Secret.SecretName) // TODO if secret is deployed by helm map name will be like that
+			//volume.Secret.SecretName = fmt.Sprintf(`{{ template "fullname" . }}-%s`, volume.Secret.SecretName) // TODO if secret is deployed by helm map name will be like that
 			//TODO add items
 		} else if volume.Glusterfs != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
@@ -231,9 +228,6 @@ func generateTemplateForVolume(volumes []kubeapi.Volume, key string, value map[s
 			partialvolumeTemplate = partialVolumeTemplate(string(volumeData), ifCondition)
 		} else {
 			partialvolumeTemplate = string(volumeData)
-
-
-
 		}
 		volumeTemplate = volumeTemplate + partialvolumeTemplate
 	}
@@ -259,16 +253,16 @@ func generateTemplateForContainer(containers []kubeapi.Container, key string, va
 					tmp := removeCharactersFromName(v.Name)
 					containterValue[tmp] = v.Value
 					key := checkKeyValue(key)
-					container.Env[k].Value = fmt.Sprintf("{{.Values%s.%s.%s}}", key, container.Name, tmp) //TODO test
+					container.Env[k].Value = fmt.Sprintf("{{.Values%s.%s.%s}}", key, removeCharactersFromName(container.Name), tmp) //TODO test
 				}
 				// Secret of Configmap has to be deployed by chart. else value from wont work.
-				if v.ValueFrom != nil {
-					if v.ValueFrom.ConfigMapKeyRef != nil {
-						container.Env[k].ValueFrom.ConfigMapKeyRef.Name = fmt.Sprintf(`{{ template "fullname" . }}-%s`, v.ValueFrom.ConfigMapKeyRef.Name)
-					} else if v.ValueFrom.SecretKeyRef != nil {
-						container.Env[k].ValueFrom.SecretKeyRef.Name = fmt.Sprintf(`{{ template "fullname" . }}-%s`, v.ValueFrom.SecretKeyRef.Name)
-					}
-				}
+				/*				if v.ValueFrom != nil {
+								if v.ValueFrom.ConfigMapKeyRef != nil {
+									container.Env[k].ValueFrom.ConfigMapKeyRef.Name = fmt.Sprintf(`{{ template "fullname" . }}-%s`, v.ValueFrom.ConfigMapKeyRef.Name)
+								} else if v.ValueFrom.SecretKeyRef != nil {
+									container.Env[k].ValueFrom.SecretKeyRef.Name = fmt.Sprintf(`{{ template "fullname" . }}-%s`, v.ValueFrom.SecretKeyRef.Name)
+								}
+							}*/
 			}
 		}
 		result[i] = container
@@ -351,6 +345,7 @@ func removeEmptyFields(temp string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
+	delete(resource, "status")
 	for k, v := range resource {
 		omitEmptyMap(resource, k, v)
 	}
@@ -575,6 +570,17 @@ func generatePersistentVolumeClaimSpec(pvcspec kubeapi.PersistentVolumeClaimSpec
 		//TODO sauman
 	}
 	return pvcspec
+}
+
+func generatePersistentVolumeSpec(spec kubeapi.PersistentVolumeSpec, key string, value map[string]interface{}) kubeapi.PersistentVolumeSpec {
+	value["ReclaimPolicy"] = spec.PersistentVolumeReclaimPolicy
+	spec.PersistentVolumeReclaimPolicy = kubeapi.PersistentVolumeReclaimPolicy(fmt.Sprintf("{{.Values.%s.ReclaimPolicy}}", key))
+	if len(spec.AccessModes) != 0 {
+		value["AccessMode"] = spec.AccessModes[0] //TODO sauman (multiple access mode)
+		spec.AccessModes = nil
+		spec.AccessModes = append(spec.AccessModes, kubeapi.PersistentVolumeAccessMode(fmt.Sprintf("{{.Values.%s.AccessMode}}", key)))
+	}
+	return spec
 }
 
 func checkKeyValue(key string) string {
