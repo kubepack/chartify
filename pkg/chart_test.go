@@ -10,7 +10,6 @@ import (
 	"testing"
 	"path/filepath"
 	"os"
-	"fmt"
 )
 
 func TestChartForPod(t *testing.T) {
@@ -158,10 +157,8 @@ func TestChartForDeployment(t *testing.T) {
 }
 
 func TestChartForMultipleObject(t *testing.T) {
-	fmt.Println("________________________________1")
 	yamlFiles := readLocalFiles("../testdata/mix_objects/input")
 	tmp, err := ioutil.TempDir(os.TempDir(),"test")
-	fmt.Println("__________________________________2")
 	assert.Nil(t, err)
 	chartData := chartInfo{
 		chartName : "test",
@@ -171,11 +168,8 @@ func TestChartForMultipleObject(t *testing.T) {
 	chdir, _ := chartData.Create()
 	files, err := ioutil.ReadDir("../testdata/mix_objects/output")
 	assert.Nil(t, err)
-
-	fmt.Println(len(files))
-
 	for _, v := range files {
-		acturalData, err := ioutil.ReadFile(filepath.Join(chdir, v.Name()))
+		acturalData, err := ioutil.ReadFile(filepath.Join(chdir,"templates", v.Name()))
 		assert.Nil(t, err)
 		expectedData, err := ioutil.ReadFile(filepath.Join("../testdata/mix_objects/output", v.Name()))
 		assert.Equal(t, string(expectedData), string(acturalData))
