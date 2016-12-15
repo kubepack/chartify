@@ -480,26 +480,6 @@ func addVolumeInPodTemplate(pod string, volume string) string {
 	return templateForPod
 }
 
-/*func generateTemplateForNameSpace(namespace string, value map[string]interface{}) {
-	namespaceTemplate := `{{.Values.Namespace}}`
-	value["Namespace"] = namespace
-	return namespaceTemplate
-}
-
-func generateTemplateForResourceVersion(resourceVersion string, value map[string]interface{}) {
-	resourceVersionTeplate := `{{.Values.ResourceVersion}}`
-	value["ResourceVersion"] = resourceVersion
-	return resourceVersionTeplate
-}
-
-
-func generateTemplateForSingleValue(resource string, key string, value map[string]interface{}) string {
-
-	resourceTemplate := fmt.Sprintf("{{.Values.%s}}", key)
-	value[key] = resource
-	return resourceTemplate
-}*/
-
 func addVolumeToTemplateForRc(rc string, volumes string) string {
 	volumes = makeSpaceForVolume(volumes, "      ")
 	template := addVolumeInRcTemplate(rc, volumes)
@@ -521,11 +501,6 @@ func addVolumeInRcTemplate(rc string, volumes string) string {
 
 	}
 	return templateForPod
-}
-
-func addVolumetoTemplateForRcSet(rcSet string, volumes string) string {
-
-	return ""
 }
 
 func generateServiceSpecTemplate(svc kubeapi.ServiceSpec, key string, value map[string]interface{}) kubeapi.ServiceSpec {

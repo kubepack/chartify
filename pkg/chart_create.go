@@ -524,8 +524,8 @@ func storageClassTemplate(storageClass storage.StorageClass) (string, valueFileG
 	key := removeCharactersFromName(storageClass.ObjectMeta.Name)
 	storageClass.ObjectMeta = generateObjectMetaTemplate(storageClass.ObjectMeta, key, value, storageClass.ObjectMeta.Name)
 	value["Provisioner"] = storageClass.Provisioner
-	storageClass.Provisioner = fmt.Sprintf("{{.Values.%s.Provisioner}}", storageClass.ObjectMeta.Name)
-	//storageClass.Parameters = TODO sauman map conversion
+	storageClass.Provisioner = fmt.Sprintf("{{.Values.%s.Provisioner}}", key)
+	storageClass.Parameters = mapToValueMaker(storageClass.Parameters, value, key)
 	storageData, err := yaml.Marshal(storageClass)
 	if err != nil {
 		log.Fatal(err)
@@ -562,4 +562,12 @@ func chartMetaData(name string) chart.Metadata {
 		ApiVersion:  "v1",
 	}
 	return cfile
+}
+
+func mapToValueMaker(mp map[string]string, value map[string]interface{}, key string) map[string]string {
+	for k, v := range mp {
+		value[k] = v
+		mp[k] = fmt.Sprintf("{{.Values.%s.%s}}", key, k)
+	}
+	return mp
 }

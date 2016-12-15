@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"reflect"
 )
 
 func CreateChart() *cobra.Command {
@@ -21,6 +22,11 @@ func CreateChart() *cobra.Command {
 			}
 			if location == "" {
 				fmt.Println("ERROR : Provide a location for the chart file")
+				os.Exit(1)
+			}
+			if kubeObjects.kubeContext == "" {
+				fmt.Println("ERROR : Provide kube context name")
+				os.Exit(1)
 			}
 			chartData := chartInfo{
 				location:  checkLocation(location),
@@ -30,6 +36,11 @@ func CreateChart() *cobra.Command {
 			if len(dir) != 0 {
 				chartData.yamlFiles = readLocalFiles(dir)
 			} else {
+				ok := kubeObjects.checkFlags()
+				if !ok {
+					fmt.Println("No object given.")
+					os.Exit(1)
+				}
 				chartData.yamlFiles = kubeObjects.makeYamlListFromKube()
 			}
 			chartData.Create()
@@ -50,7 +61,7 @@ func CreateChart() *cobra.Command {
 	cmd.Flags().StringSliceVar(&kubeObjects.jobs, "jobs", kubeObjects.jobs, "specify names of jobs")
 	cmd.Flags().StringSliceVar(&kubeObjects.replicaSet, "replica_sets", kubeObjects.replicaSet, "specify names of replica sets(replicaset_name.namespace)")
 	cmd.Flags().StringSliceVar(&kubeObjects.daemons, "daemons", kubeObjects.daemons, "specify names of daemon sets(daemons.namespace)")
-	cmd.Flags().StringSliceVar(&kubeObjects.storageClasses, "storage", kubeObjects.storageClasses, "")
+	cmd.Flags().StringSliceVar(&kubeObjects.storageClasses, "storage", kubeObjects.storageClasses, "specify names of storageclasses")
 
 	return cmd
 }
@@ -92,4 +103,19 @@ func (kubeObjects objects) makeYamlListFromKube() []string {
 	}
 	yamlFiles := kubeObjects.readKubernetesObjects(kubeClient)
 	return yamlFiles
+}
+
+func (kubeObjects objects) checkFlags() bool {
+	v := reflect.ValueOf(kubeObjects)
+	count := 0
+	for i:= 0 ;i<v.NumField(); i++ {
+		if v.Field(i).Len() != 0 {
+			count++
+		}
+		if count > 1 {
+			return true
+		}
+	}
+	return false
+
 }
