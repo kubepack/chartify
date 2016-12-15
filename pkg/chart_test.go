@@ -8,6 +8,9 @@ import (
 	"k8s.io/kubernetes/pkg/apis/batch"
 	ext "k8s.io/kubernetes/pkg/apis/extensions"
 	"testing"
+	"path/filepath"
+	"os"
+	"fmt"
 )
 
 func TestChartForPod(t *testing.T) {
@@ -17,9 +20,9 @@ func TestChartForPod(t *testing.T) {
 	err = yaml.Unmarshal(yamlFile, &pod)
 	assert.Nil(t, err)
 	template, _ := podTemplate(pod)
-	actualTemplate, err := ioutil.ReadFile("../testdata/pod/output/pod_chart.yaml")
+	expectedTemplate, err := ioutil.ReadFile("../testdata/pod/output/pod_chart.yaml")
 	assert.Nil(t, err)
-	assert.Equal(t, string(actualTemplate), string(template))
+	assert.Equal(t, string(expectedTemplate), string(template))
 }
 
 func TestChartForRc(t *testing.T) {
@@ -29,9 +32,9 @@ func TestChartForRc(t *testing.T) {
 	err = yaml.Unmarshal(yamlFile, &rc)
 	assert.Nil(t, err)
 	template, _ := replicationControllerTemplate(rc)
-	actualTemplate, err := ioutil.ReadFile("../testdata/rc/output/rc_chart.yaml")
+	expectedTemplate, err := ioutil.ReadFile("../testdata/rc/output/rc_chart.yaml")
 	assert.Nil(t, err)
-	assert.Equal(t, string(actualTemplate), string(template))
+	assert.Equal(t, string(expectedTemplate), string(template))
 }
 
 func TestChartForReplicaSet(t *testing.T) {
@@ -41,9 +44,9 @@ func TestChartForReplicaSet(t *testing.T) {
 	err = yaml.Unmarshal(yamlFile, &replicaset)
 	assert.Nil(t, err)
 	template, _ := replicaSetTemplate(replicaset)
-	actualTemplate, err := ioutil.ReadFile("../testdata/replicaset/output/replicaset_chart.yaml")
+	expectedTemplate, err := ioutil.ReadFile("../testdata/replicaset/output/replicaset_chart.yaml")
 	assert.Nil(t, err)
-	assert.Equal(t, string(actualTemplate), string(template))
+	assert.Equal(t, string(expectedTemplate), string(template))
 }
 
 func TestChartForJob(t *testing.T) {
@@ -53,9 +56,9 @@ func TestChartForJob(t *testing.T) {
 	err = yaml.Unmarshal(yamlFile, &job)
 	assert.Nil(t, err)
 	template, _ := jobTemplate(job)
-	actualTemplate, err := ioutil.ReadFile("../testdata/job/output/job_chart.yaml")
+	expectedTemplate, err := ioutil.ReadFile("../testdata/job/output/job_chart.yaml")
 	assert.Nil(t, err)
-	assert.Equal(t, string(actualTemplate), string(template))
+	assert.Equal(t, string(expectedTemplate), string(template))
 }
 
 func TestChartCreatForDeployment(t *testing.T) {
@@ -65,9 +68,9 @@ func TestChartCreatForDeployment(t *testing.T) {
 	err = yaml.Unmarshal(yamlFile, &deployment)
 	assert.Nil(t, err)
 	template, _ := deploymentTemplate(deployment)
-	actualTemplate, err := ioutil.ReadFile("../test/chart/deployment_chart.yaml")
+	expectedTemplate, err := ioutil.ReadFile("../test/chart/deployment_chart.yaml")
 	assert.Nil(t, err)
-	assert.Equal(t, string(actualTemplate), string(template))
+	assert.Equal(t, string(expectedTemplate), string(template))
 }
 
 func TestChartForConfigMap(t *testing.T) {
@@ -77,9 +80,9 @@ func TestChartForConfigMap(t *testing.T) {
 	err = yaml.Unmarshal(yamlFile, &configmap)
 	assert.Nil(t, err)
 	template, _ := configMapTemplate(configmap)
-	actualTemplate, err := ioutil.ReadFile("../testdata/configmap/output/configmap_chart.yaml")
+	expectedTemplate, err := ioutil.ReadFile("../testdata/configmap/output/configmap_chart.yaml")
 	assert.Nil(t, err)
-	assert.Equal(t, string(actualTemplate), string(template))
+	assert.Equal(t, string(expectedTemplate), string(template))
 }
 
 func TestChartForDaemon(t *testing.T) {
@@ -89,9 +92,9 @@ func TestChartForDaemon(t *testing.T) {
 	err = yaml.Unmarshal(yamlFile, &daemonset)
 	assert.Nil(t, err)
 	template, _ := daemonsetTemplate(daemonset)
-	actualTemplate, err := ioutil.ReadFile("../testdata/daemon/output/daemon_chart.yaml")
+	expectedTemplate, err := ioutil.ReadFile("../testdata/daemon/output/daemon_chart.yaml")
 	assert.Nil(t, err)
-	assert.Equal(t, string(actualTemplate), string(template))
+	assert.Equal(t, string(expectedTemplate), string(template))
 }
 
 func TestChartForSecret(t *testing.T) {
@@ -101,9 +104,9 @@ func TestChartForSecret(t *testing.T) {
 	err = yaml.Unmarshal(yamlFile, &secret)
 	assert.Nil(t, err)
 	template, _ := secretTemplate(secret)
-	actualTemplate, err := ioutil.ReadFile("../testdata/secret/output/secret_chart.yaml")
+	expectedTemplate, err := ioutil.ReadFile("../testdata/secret/output/secret_chart.yaml")
 	assert.Nil(t, err)
-	assert.Equal(t, string(actualTemplate), string(template))
+	assert.Equal(t, string(expectedTemplate), string(template))
 }
 
 func TestChartForPv(t *testing.T) {
@@ -113,9 +116,9 @@ func TestChartForPv(t *testing.T) {
 	err = yaml.Unmarshal(yamlFile, &pv)
 	assert.Nil(t, err)
 	template, _ := pvTemplate(pv)
-	actualTemplate, err := ioutil.ReadFile("../testdata/pv/output/pv_chart.yaml")
+	expectedTemplate, err := ioutil.ReadFile("../testdata/pv/output/pv_chart.yaml")
 	assert.Nil(t, err)
-	assert.Equal(t, string(actualTemplate), string(template))
+	assert.Equal(t, string(expectedTemplate), string(template))
 }
 
 func TestChartForService(t *testing.T) {
@@ -125,9 +128,9 @@ func TestChartForService(t *testing.T) {
 	err = yaml.Unmarshal(yamlFile, &svc)
 	assert.Nil(t, err)
 	template, _ := serviceTemplate(svc)
-	actualTemplate, err := ioutil.ReadFile("../testdata/service/output/service_chart.yaml")
+	expectedTemplate, err := ioutil.ReadFile("../testdata/service/output/service_chart.yaml")
 	assert.Nil(t, err)
-	assert.Equal(t, string(actualTemplate), string(template))
+	assert.Equal(t, string(expectedTemplate), string(template))
 }
 
 func TestChartForPvc(t *testing.T) {
@@ -137,9 +140,9 @@ func TestChartForPvc(t *testing.T) {
 	err = yaml.Unmarshal(yamlFile, &pvc)
 	assert.Nil(t, err)
 	template, _ := pvcTemplate(pvc)
-	actualTemplate, err := ioutil.ReadFile("../testdata/pvc/output/pvc_chart.yaml")
+	expectedTemplate, err := ioutil.ReadFile("../testdata/pvc/output/pvc_chart.yaml")
 	assert.Nil(t, err)
-	assert.Equal(t, string(actualTemplate), string(template))
+	assert.Equal(t, string(expectedTemplate), string(template))
 }
 
 func TestChartForDeployment(t *testing.T) {
@@ -149,7 +152,33 @@ func TestChartForDeployment(t *testing.T) {
 	err = yaml.Unmarshal(yamlFile, &deployment)
 	assert.Nil(t, err)
 	template, _ := deploymentTemplate(deployment)
-	actualTemplate, err := ioutil.ReadFile("../testdata/deployment/output/deployment_chart.yaml")
+	expectedTemplate, err := ioutil.ReadFile("../testdata/deployment/output/deployment_chart.yaml")
 	assert.Nil(t, err)
-	assert.Equal(t, string(actualTemplate), string(template))
+	assert.Equal(t, string(expectedTemplate), string(template))
+}
+
+func TestChartForMultipleObject(t *testing.T) {
+	fmt.Println("________________________________1")
+	yamlFiles := readLocalFiles("../testdata/mix_objects/input")
+	tmp, err := ioutil.TempDir(os.TempDir(),"test")
+	fmt.Println("__________________________________2")
+	assert.Nil(t, err)
+	chartData := chartInfo{
+		chartName : "test",
+		yamlFiles : yamlFiles,
+		location : tmp,
+	}
+	chdir, _ := chartData.Create()
+	files, err := ioutil.ReadDir("../testdata/mix_objects/output")
+	assert.Nil(t, err)
+
+	fmt.Println(len(files))
+
+	for _, v := range files {
+		acturalData, err := ioutil.ReadFile(filepath.Join(chdir, v.Name()))
+		assert.Nil(t, err)
+		expectedData, err := ioutil.ReadFile(filepath.Join("../testdata/mix_objects/output", v.Name()))
+		assert.Equal(t, string(expectedData), string(acturalData))
+	}
+	os.Remove(chdir)
 }
