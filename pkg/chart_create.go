@@ -254,7 +254,6 @@ func podTemplate(pod kubeapi.Pod) (string, valueFileGenerator) {
 		value:       value,
 		persistence: persistence,
 	}
-
 	return template, data
 }
 

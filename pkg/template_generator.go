@@ -13,7 +13,6 @@ import (
 )
 
 func generateObjectMetaTemplate(objectMeta kubeapi.ObjectMeta, key string, value map[string]interface{}, extraTagForName string) kubeapi.ObjectMeta {
-
 	key = checkKeyValue(key)
 	if len(objectMeta.Name) != 0 {
 		objectMeta.Name = fmt.Sprintf(`{{ template "fullname" . }}`)
@@ -64,7 +63,6 @@ func generateTemplateForPodSpec(podSpec kubeapi.PodSpec, key string, value map[s
 }
 
 func generateTemplateForVolume(volumes []kubeapi.Volume, key string, value map[string]interface{}) (string, map[string]interface{}) {
-
 	key = checkKeyValue(key)
 	volumeTemplate := ""
 	ifCondition := ""
