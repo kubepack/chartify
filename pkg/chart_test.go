@@ -1,15 +1,16 @@
 package pkg
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"testing"
+
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 	kubeapi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/batch"
 	ext "k8s.io/kubernetes/pkg/apis/extensions"
-	"testing"
-	"path/filepath"
-	"os"
 )
 
 func TestChartForPod(t *testing.T) {
@@ -158,18 +159,18 @@ func TestChartForDeployment(t *testing.T) {
 
 func TestChartForMultipleObject(t *testing.T) {
 	yamlFiles := readLocalFiles("../testdata/mix_objects/input")
-	tmp, err := ioutil.TempDir(os.TempDir(),"test")
+	tmp, err := ioutil.TempDir(os.TempDir(), "test")
 	assert.Nil(t, err)
 	chartData := chartInfo{
-		chartName : "test",
-		yamlFiles : yamlFiles,
-		location : tmp,
+		chartName: "test",
+		yamlFiles: yamlFiles,
+		location:  tmp,
 	}
 	chdir, _ := chartData.Create()
 	files, err := ioutil.ReadDir("../testdata/mix_objects/output")
 	assert.Nil(t, err)
 	for _, v := range files {
-		acturalData, err := ioutil.ReadFile(filepath.Join(chdir,"templates", v.Name()))
+		acturalData, err := ioutil.ReadFile(filepath.Join(chdir, "templates", v.Name()))
 		assert.Nil(t, err)
 		expectedData, err := ioutil.ReadFile(filepath.Join("../testdata/mix_objects/output", v.Name()))
 		assert.Equal(t, string(expectedData), string(acturalData))

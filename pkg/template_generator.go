@@ -3,16 +3,17 @@ package pkg
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ghodss/yaml"
 	"io/ioutil"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	kubeapi "k8s.io/kubernetes/pkg/api"
 	"log"
 	"reflect"
 	"strings"
+
+	"github.com/ghodss/yaml"
+	"k8s.io/helm/pkg/proto/hapi/chart"
+	kapi "k8s.io/kubernetes/pkg/api"
 )
 
-func generateObjectMetaTemplate(objectMeta kubeapi.ObjectMeta, key string, value map[string]interface{}, extraTagForName string) kubeapi.ObjectMeta {
+func generateObjectMetaTemplate(objectMeta kapi.ObjectMeta, key string, value map[string]interface{}, extraTagForName string) kapi.ObjectMeta {
 	key = checkKeyValue(key)
 	if len(objectMeta.Name) != 0 {
 		objectMeta.Name = fmt.Sprintf(`{{ template "fullname" . }}`)
@@ -40,7 +41,7 @@ func generateObjectMetaTemplate(objectMeta kubeapi.ObjectMeta, key string, value
 	return objectMeta
 }
 
-func generateTemplateForPodSpec(podSpec kubeapi.PodSpec, key string, value map[string]interface{}) kubeapi.PodSpec {
+func generateTemplateForPodSpec(podSpec kapi.PodSpec, key string, value map[string]interface{}) kapi.PodSpec {
 	podSpec.Containers = generateTemplateForContainer(podSpec.Containers, key, value)
 	key = checkKeyValue(key)
 	if len(podSpec.Hostname) != 0 {
@@ -62,7 +63,7 @@ func generateTemplateForPodSpec(podSpec kubeapi.PodSpec, key string, value map[s
 	return podSpec
 }
 
-func generateTemplateForVolume(volumes []kubeapi.Volume, key string, value map[string]interface{}) (string, map[string]interface{}) {
+func generateTemplateForVolume(volumes []kapi.Volume, key string, value map[string]interface{}) (string, map[string]interface{}) {
 	key = checkKeyValue(key)
 	volumeTemplate := ""
 	ifCondition := ""
@@ -72,7 +73,7 @@ func generateTemplateForVolume(volumes []kubeapi.Volume, key string, value map[s
 		ifCondition = ""
 		volumeMap := make(map[string]interface{}, 0)
 		volumeMap["enabled"] = true
-		vol := []kubeapi.Volume{}
+		vol := []kapi.Volume{}
 		vol = append(vol, volume)
 		if volume.PersistentVolumeClaim != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
@@ -232,9 +233,9 @@ func generateTemplateForVolume(volumes []kubeapi.Volume, key string, value map[s
 	return volumeTemplate, persistence
 }
 
-func generateTemplateForContainer(containers []kubeapi.Container, key string, value map[string]interface{}) []kubeapi.Container {
+func generateTemplateForContainer(containers []kapi.Container, key string, value map[string]interface{}) []kapi.Container {
 	containterValue := make(map[string]interface{}, 0)
-	result := make([]kubeapi.Container, len(containers))
+	result := make([]kapi.Container, len(containers))
 	for k := range containterValue {
 		delete(containterValue, k)
 	}
@@ -243,7 +244,7 @@ func generateTemplateForContainer(containers []kubeapi.Container, key string, va
 		container.Image = addTemplateImageValue(containerName, container.Image, key, containterValue)
 		if len(container.ImagePullPolicy) != 0 {
 			containterValue["ImagePullPolicy"] = string(container.ImagePullPolicy)
-			container.ImagePullPolicy = kubeapi.PullPolicy(addContainerValue(key, containerName, "imagePullPolicy"))
+			container.ImagePullPolicy = kapi.PullPolicy(addContainerValue(key, containerName, "imagePullPolicy"))
 		}
 		if len(container.Env) != 0 {
 			for k, v := range container.Env {
@@ -501,7 +502,7 @@ func addVolumeInRcTemplate(rc string, volumes string) string {
 	return templateForPod
 }
 
-func generateServiceSpecTemplate(svc kubeapi.ServiceSpec, key string, value map[string]interface{}) kubeapi.ServiceSpec {
+func generateServiceSpecTemplate(svc kapi.ServiceSpec, key string, value map[string]interface{}) kapi.ServiceSpec {
 	if len(key) != 0 {
 		key = "." + key
 	}
@@ -519,16 +520,16 @@ func generateServiceSpecTemplate(svc kubeapi.ServiceSpec, key string, value map[
 	}
 	if len(string(svc.Type)) != 0 {
 		value["ServiceType"] = string(svc.Type)
-		svc.Type = kubeapi.ServiceType(fmt.Sprintf("{{.Values%s.ServiceType}}", key))
+		svc.Type = kapi.ServiceType(fmt.Sprintf("{{.Values%s.ServiceType}}", key))
 	}
 	if len(string(svc.SessionAffinity)) != 0 {
 		value["SessionAffinity"] = string(svc.SessionAffinity)
-		svc.SessionAffinity = kubeapi.ServiceAffinity(fmt.Sprintf("{{.Values%s.SessionAffinity}}", key))
+		svc.SessionAffinity = kapi.ServiceAffinity(fmt.Sprintf("{{.Values%s.SessionAffinity}}", key))
 	}
 	return svc
 }
 
-func generatePersistentVolumeClaimSpec(pvcspec kubeapi.PersistentVolumeClaimSpec, key string, value map[string]interface{}) kubeapi.PersistentVolumeClaimSpec {
+func generatePersistentVolumeClaimSpec(pvcspec kapi.PersistentVolumeClaimSpec, key string, value map[string]interface{}) kapi.PersistentVolumeClaimSpec {
 	key = checkKeyValue(key)
 	if len(pvcspec.VolumeName) != 0 {
 		value["VolumeName"] = pvcspec.VolumeName
@@ -537,7 +538,7 @@ func generatePersistentVolumeClaimSpec(pvcspec kubeapi.PersistentVolumeClaimSpec
 	if len(pvcspec.AccessModes) != 0 {
 		value["AccessMode"] = pvcspec.AccessModes[0] //TODO sauman (multiple access mode)
 		pvcspec.AccessModes = nil
-		pvcspec.AccessModes = append(pvcspec.AccessModes, kubeapi.PersistentVolumeAccessMode(fmt.Sprintf("{{.Values.persistence%s.AccessMode}}", key)))
+		pvcspec.AccessModes = append(pvcspec.AccessModes, kapi.PersistentVolumeAccessMode(fmt.Sprintf("{{.Values.persistence%s.AccessMode}}", key)))
 	}
 	if pvcspec.Resources.Requests != nil {
 		//TODO sauman
@@ -545,13 +546,13 @@ func generatePersistentVolumeClaimSpec(pvcspec kubeapi.PersistentVolumeClaimSpec
 	return pvcspec
 }
 
-func generatePersistentVolumeSpec(spec kubeapi.PersistentVolumeSpec, key string, value map[string]interface{}) kubeapi.PersistentVolumeSpec {
+func generatePersistentVolumeSpec(spec kapi.PersistentVolumeSpec, key string, value map[string]interface{}) kapi.PersistentVolumeSpec {
 	value["ReclaimPolicy"] = spec.PersistentVolumeReclaimPolicy
-	spec.PersistentVolumeReclaimPolicy = kubeapi.PersistentVolumeReclaimPolicy(fmt.Sprintf("{{.Values.%s.ReclaimPolicy}}", key))
+	spec.PersistentVolumeReclaimPolicy = kapi.PersistentVolumeReclaimPolicy(fmt.Sprintf("{{.Values.%s.ReclaimPolicy}}", key))
 	if len(spec.AccessModes) != 0 {
 		value["AccessMode"] = spec.AccessModes[0] //TODO sauman (multiple access mode)
 		spec.AccessModes = nil
-		spec.AccessModes = append(spec.AccessModes, kubeapi.PersistentVolumeAccessMode(fmt.Sprintf("{{.Values.%s.AccessMode}}", key)))
+		spec.AccessModes = append(spec.AccessModes, kapi.PersistentVolumeAccessMode(fmt.Sprintf("{{.Values.%s.AccessMode}}", key)))
 	}
 	return spec
 }

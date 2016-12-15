@@ -1,0 +1,24 @@
+apiVersion: apps/v1alpha1
+kind: StatefulSet
+metadata:
+  labels:
+    chart: '{{.Chart.Name}}-{{.Chart.Version}}'
+    heritage: '{{.Release.Service}}'
+    release: '{{.Release.Name}}'
+  name: '{{ template "fullname" . }}-mypetset'
+spec:
+  replicas: 2
+  serviceName: '{{.Values.mypetset.ServiceName}}'
+  template:
+    metadata:
+      annotations:
+        pod.alpha.kubernetes.io/initialized: "true"
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: '{{.Values.mypetset.nginx.image}}:{{.Values.mypetset.nginx.imageTag}}'
+        name: nginx
+        ports:
+        - containerPort: 80
+          name: web

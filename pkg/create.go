@@ -2,12 +2,13 @@ package pkg
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"reflect"
+
+	"github.com/spf13/cobra"
 )
 
 func CreateChart() *cobra.Command {
@@ -57,7 +58,7 @@ func CreateChart() *cobra.Command {
 	cmd.Flags().StringSliceVar(&kubeObjects.secrets, "secrets", kubeObjects.configMaps, "specify the names of secrets(secret_name.namespace) to include them in chart")
 	cmd.Flags().StringSliceVar(&kubeObjects.persistentVolume, "pv", kubeObjects.persistentVolume, "specify names of persistent volumes")
 	cmd.Flags().StringSliceVar(&kubeObjects.persistentVolumeClaim, "pvc", kubeObjects.persistentVolumeClaim, "specify names of persistent volume claim")
-	cmd.Flags().StringSliceVar(&kubeObjects.petsets, "petsets", kubeObjects.petsets, "specify names of petsets(petset_name.namespace)")
+	cmd.Flags().StringSliceVar(&kubeObjects.statefulsets, "statefulsets", kubeObjects.statefulsets, "specify names of statefulsets(statefulset_name.namespace)")
 	cmd.Flags().StringSliceVar(&kubeObjects.jobs, "jobs", kubeObjects.jobs, "specify names of jobs")
 	cmd.Flags().StringSliceVar(&kubeObjects.replicaSet, "replica_sets", kubeObjects.replicaSet, "specify names of replica sets(replicaset_name.namespace)")
 	cmd.Flags().StringSliceVar(&kubeObjects.daemons, "daemons", kubeObjects.daemons, "specify names of daemon sets(daemons.namespace)")
@@ -108,7 +109,7 @@ func (kubeObjects objects) makeYamlListFromKube() []string {
 func (kubeObjects objects) checkFlags() bool {
 	v := reflect.ValueOf(kubeObjects)
 	count := 0
-	for i:= 0 ;i<v.NumField(); i++ {
+	for i := 0; i < v.NumField(); i++ {
 		if v.Field(i).Len() != 0 {
 			count++
 		}

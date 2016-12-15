@@ -2,8 +2,12 @@ package pkg
 
 import (
 	"fmt"
-	"github.com/ghodss/yaml"
 	"io/ioutil"
+	"log"
+	"os"
+	"path/filepath"
+
+	"github.com/ghodss/yaml"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	kubeapi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/unversioned"
@@ -11,9 +15,6 @@ import (
 	"k8s.io/kubernetes/pkg/apis/batch"
 	ext "k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/apis/storage"
-	"log"
-	"os"
-	"path/filepath"
 )
 
 func (c chartInfo) Create() (string, error) {
@@ -125,15 +126,15 @@ func (c chartInfo) Create() (string, error) {
 			template, values = replicaSetTemplate(rcSet)
 			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
-		} else if resourceType.Kind == "PetSet" {
-			petset := apps.PetSet{}
-			err := yaml.Unmarshal([]byte(yamlData), &petset)
+		} else if resourceType.Kind == "StatefulSet" {
+			statefulset := apps.StatefulSet{}
+			err := yaml.Unmarshal([]byte(yamlData), &statefulset)
 			if err != nil {
 				log.Fatal(err)
 			}
-			name := petset.Name
+			name := statefulset.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
-			template, values = petsetTemplate(petset)
+			template, values = statefulsetTemplate(statefulset)
 			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
 		} else if resourceType.Kind == "Service" {
@@ -288,7 +289,7 @@ func replicaSetTemplate(replicaSet ext.ReplicaSet) (string, valueFileGenerator) 
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
 	key := removeCharactersFromName(replicaSet.ObjectMeta.Name)
-	replicaSet.ObjectMeta = generateObjectMetaTemplate(replicaSet.ObjectMeta, key, value,replicaSet.ObjectMeta.Name)
+	replicaSet.ObjectMeta = generateObjectMetaTemplate(replicaSet.ObjectMeta, key, value, replicaSet.ObjectMeta.Name)
 	replicaSet.Spec.Template.Spec = generateTemplateForPodSpec(replicaSet.Spec.Template.Spec, key, value)
 	if len(replicaSet.Spec.Template.Spec.Volumes) != 0 {
 		volumes, persistence = generateTemplateForVolume(replicaSet.Spec.Template.Spec.Volumes, key, value)
@@ -375,31 +376,31 @@ func daemonsetTemplate(daemonset ext.DaemonSet) (string, valueFileGenerator) {
 	return template, valueFileGenerator{value: value, persistence: persistence}
 }
 
-func petsetTemplate(petset apps.PetSet) (string, valueFileGenerator) {
+func statefulsetTemplate(statefulset apps.StatefulSet) (string, valueFileGenerator) {
 	volumes := ""
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
-	key := removeCharactersFromName(petset.ObjectMeta.Name)
-	petset.ObjectMeta = generateObjectMetaTemplate(petset.ObjectMeta, key, value, petset.ObjectMeta.Name)
-	if len(petset.Spec.ServiceName) != 0 {
-		petset.Spec.ServiceName = fmt.Sprintf("{{.Values.%s.ServiceName}}",key)
-		value["ServiceName"] = petset.Spec.ServiceName //generateTemplateForSingleValue(petset.Spec.ServiceName, "ServiceName", value)
+	key := removeCharactersFromName(statefulset.ObjectMeta.Name)
+	statefulset.ObjectMeta = generateObjectMetaTemplate(statefulset.ObjectMeta, key, value, statefulset.ObjectMeta.Name)
+	if len(statefulset.Spec.ServiceName) != 0 {
+		statefulset.Spec.ServiceName = fmt.Sprintf("{{.Values.%s.ServiceName}}", key)
+		value["ServiceName"] = statefulset.Spec.ServiceName //generateTemplateForSingleValue(statefulset.Spec.ServiceName, "ServiceName", value)
 	}
-	petset.Spec.Template.Spec = generateTemplateForPodSpec(petset.Spec.Template.Spec, key, value)
-	if len(petset.Spec.Template.Spec.Volumes) != 0 {
-		volumes, persistence = generateTemplateForVolume(petset.Spec.Template.Spec.Volumes, key, value)
-		petset.Spec.Template.Spec.Volumes = nil
+	statefulset.Spec.Template.Spec = generateTemplateForPodSpec(statefulset.Spec.Template.Spec, key, value)
+	if len(statefulset.Spec.Template.Spec.Volumes) != 0 {
+		volumes, persistence = generateTemplateForVolume(statefulset.Spec.Template.Spec.Volumes, key, value)
+		statefulset.Spec.Template.Spec.Volumes = nil
 	}
-	tempPetSetByte, err := yaml.Marshal(petset)
+	tempStatefulSetByte, err := yaml.Marshal(statefulset)
 	if err != nil {
 		log.Fatal(err)
 	}
-	tempPetSet := removeEmptyFields(string(tempPetSetByte))
+	tempStatefulSet := removeEmptyFields(string(tempStatefulSetByte))
 	template := ""
 	if len(volumes) != 0 {
-		template = addVolumeToTemplateForRc(tempPetSet, volumes)
+		template = addVolumeToTemplateForRc(tempStatefulSet, volumes)
 	} else {
-		template = tempPetSet
+		template = tempStatefulSet
 	}
 	return template, valueFileGenerator{value: value, persistence: persistence}
 }

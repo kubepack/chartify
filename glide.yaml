@@ -4,11 +4,11 @@ import:
 - package: github.com/mitchellh/go-homedir
 - package: github.com/spf13/cobra
 - package: k8s.io/helm
-  version: v2.0.2
+  version: ^2.1.0
   subpackages:
   - pkg/proto/hapi/chart
 - package: k8s.io/kubernetes
-  version: v1.4.6
+  version: ~1.5.0
   subpackages:
   - pkg/api
   - pkg/api/unversioned

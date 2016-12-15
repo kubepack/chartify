@@ -59,7 +59,7 @@ type objects struct {
 	secrets                []string
 	persistentVolume       []string
 	persistentVolumeClaim  []string
-	petsets                []string
+	statefulsets           []string
 	jobs                   []string
 	daemons                []string
 	replicaSet             []string

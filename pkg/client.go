@@ -1,18 +1,18 @@
-
 package pkg
 
 import (
+	"fmt"
+
+	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
-	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	client"k8s.io/kubernetes/pkg/client/unversioned"
 )
 
-func NewKubeClient(context string) (*client.Client, error) {
-	config := GetConfig(context)
-	factory := cmdutil.NewFactory(config)
-	kubeClient, err := factory.Client()
-	return kubeClient, err
-
+func NewKubeClient(context string) (clientset.Interface, error) {
+	config, err := GetConfig(context).ClientConfig()
+	if err != nil {
+		return nil, fmt.Errorf("could not get kubernetes config for context '%s': %s", context, err)
+	}
+	return clientset.NewForConfig(config)
 }
 
 func GetConfig(context string) clientcmd.ClientConfig {
@@ -26,4 +26,3 @@ func GetConfig(context string) clientcmd.ClientConfig {
 	}
 	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides)
 }
-

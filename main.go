@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/appscode/chartify/pkg"
 	"os"
+
+	"github.com/appscode/chartify/pkg"
+	"github.com/spf13/cobra"
 )
 
 func main() {
