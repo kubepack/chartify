@@ -1,0 +1,4 @@
+pi:
+  pi:
+    image: perl
+    imageTag: latest

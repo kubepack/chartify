@@ -1,0 +1,3 @@
+pv0003:
+  AccessMode: ReadWriteOnce
+  ReclaimPolicy: Recycle

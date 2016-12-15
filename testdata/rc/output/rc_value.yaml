@@ -1,0 +1,4 @@
+nginx:
+  nginx:
+    image: nginx
+    imageTag: latest

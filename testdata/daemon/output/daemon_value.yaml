@@ -1,0 +1,4 @@
+datastore:
+  datastoreshard:
+    image: kubernetes/sharded
+    imageTag: latest

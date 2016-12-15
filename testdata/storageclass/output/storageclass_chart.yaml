@@ -1,0 +1,14 @@
+apiVersion: storage.k8s.io/v1beta1
+kind: StorageClass
+metadata:
+  creationTimestamp: null
+  labels:
+    chart: '{{.Chart.Name}}-{{.Chart.Version}}'
+    heritage: '{{.Release.Service}}'
+    release: '{{.Release.Name}}'
+  name: '{{ template "fullname" . }}-teststrg'
+parameters:
+  iopsPerGB: '{{.Values.teststrg.iopsPerGB}}'
+  type: '{{.Values.teststrg.type}}'
+  zone: '{{.Values.teststrg.zone}}'
+provisioner: '{{.Values.teststrg.Provisioner}}'

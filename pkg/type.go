@@ -21,7 +21,6 @@ const (
 	HelpersName = "_helpers.tpl"
 )
 
-
 const defaultHelpers = `{{/* vim: set filetype=mustache: */}}
 {{/*
 Expand the name of the chart.
@@ -40,20 +39,36 @@ We truncate at 24 chars because some Kubernetes name fields are limited to this 
 {{- end -}}
 `
 
-
-
 type valueFileGenerator struct {
-	value map[string]interface{}
+	value       map[string]interface{}
 	persistence map[string]interface{}
 }
 
-var dir string
-var location string
-var chartName string
+var (
+	dir       string
+	location  string
+	chartName string
+)
+
+type objects struct {
+	kubeContext            string
+	pods                   []string
+	replicationControllers []string
+	configMaps             []string
+	services               []string
+	secrets                []string
+	persistentVolume       []string
+	persistentVolumeClaim  []string
+	petsets                []string
+	jobs                   []string
+	daemons                []string
+	replicaSet             []string
+	storageClasses         []string
+}
 
 type chartInfo struct {
-	dir string
-	location string
+	dir       string
+	location  string
 	chartName string
 	yamlFiles []string
 }
