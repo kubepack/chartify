@@ -117,5 +117,4 @@ func (kubeObjects objects) checkFlags() bool {
 		}
 	}
 	return false
-
 }
