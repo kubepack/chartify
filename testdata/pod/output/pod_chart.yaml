@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: 2016-12-13T09:02:48Z
+  labels:
+    chart: '{{.Chart.Name}}-{{.Chart.Version}}'
+    heritage: '{{.Release.Service}}'
+    release: '{{.Release.Name}}'
+  name: '{{ template "fullname" . }}-mypod'
+  namespace: '{{.Values.mypod.Namespace}}'
+  resourceVersion: "7558270"
+  selfLink: '{{.Values.mypod.SelfLink}}'
+  uid: eb5b307e-c112-11e6-aee4-124f2ed5f410
+spec:
+  containers:
+  - image: '{{.Values.mypod.mypod.image}}:{{.Values.mypod.mypod.imageTag}}'
+    imagePullPolicy: '{{.Values.mypod.mypod.imagePullPolicy}}'
+    name: mypod
+    resources:
+      requests:
+        cpu: 100m
+    terminationMessagePath: /dev/termination-log

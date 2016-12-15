@@ -28,7 +28,7 @@ func (c chartInfo) Create() (string, error) {
 	} else if !fi.IsDir() {
 		return path, fmt.Errorf("no such directory %s", path)
 	}
-	fmt.Printf("Creating custom Chart from yaml\n")
+	fmt.Printf("Creating Custom Chart...\n")
 	cdir := filepath.Join(path, chartfile.Name)
 	if fi, err := os.Stat(cdir); err == nil && !fi.IsDir() {
 		return cdir, fmt.Errorf("file %s already exists and is not a directory", cdir)
@@ -65,13 +65,11 @@ func (c chartInfo) Create() (string, error) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			//valueFile[k] = values
 			name := pod.Name
-			templateName = filepath.Join(templateLocation, name+"-pod.yaml")
+			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = podTemplate(pod)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
-
 		} else if resourceType.Kind == "ReplicationController" {
 			rc := kubeapi.ReplicationController{}
 			err = yaml.Unmarshal([]byte(yamlData), &rc)
@@ -79,21 +77,20 @@ func (c chartInfo) Create() (string, error) {
 				log.Fatal(err)
 			}
 			name := rc.Name
-			templateName = filepath.Join(templateLocation, name+"-rc.yaml")
+			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = replicationControllerTemplate(rc)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = values.persistence
 		} else if resourceType.Kind == "Deployment" {
-
 			deployment := ext.Deployment{}
 			err = yaml.Unmarshal([]byte(yamlData), &deployment)
 			name := deployment.Name
-			templateName = filepath.Join(templateLocation, name+"-deploymemt.yaml")
+			templateName = filepath.Join(templateLocation, name+".yaml")
 			if err != nil {
 				log.Fatal(err)
 			}
 			template, values = deploymentTemplate(deployment)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = values.persistence
 		} else if resourceType.Kind == "Job" {
 			job := batch.Job{}
@@ -102,49 +99,44 @@ func (c chartInfo) Create() (string, error) {
 				log.Fatal(err)
 			}
 			name := job.Name
-			templateName = filepath.Join(templateLocation, name+"-job.yaml")
+			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = jobTemplate(job)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = values.persistence
-
 		} else if resourceType.Kind == "DaemonSet" {
-
 			daemonset := ext.DaemonSet{}
 			err = yaml.Unmarshal([]byte(yamlData), &daemonset)
 			if err != nil {
 				log.Fatal(err)
 			}
 			name := daemonset.Name
-			templateName = filepath.Join(templateLocation, name+"-daemonset.yaml")
+			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = daemonsetTemplate(daemonset)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = values.persistence
 		} else if resourceType.Kind == "ReplicaSet" {
-
 			rcSet := ext.ReplicaSet{}
 			err = yaml.Unmarshal([]byte(yamlData), &rcSet)
 			if err != nil {
 				log.Fatal(err)
 			}
 			name := rcSet.Name
-			templateName = filepath.Join(templateLocation, name+"-replicaset.yaml")
+			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = replicaSetTemplate(rcSet)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = values.persistence
 		} else if resourceType.Kind == "PetSet" {
-
 			petset := apps.PetSet{}
 			err := yaml.Unmarshal([]byte(yamlData), &petset)
 			if err != nil {
 				log.Fatal(err)
 			}
 			name := petset.Name
-			templateName = filepath.Join(templateLocation, name+"petset.yaml")
+			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = petsetTemplate(petset)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = values.persistence
 		} else if resourceType.Kind == "Service" {
-
 			service := kubeapi.Service{}
 			err := yaml.Unmarshal([]byte(yamlData), &service)
 			if err != nil {
@@ -152,8 +144,8 @@ func (c chartInfo) Create() (string, error) {
 			}
 			template, values = serviceTemplate(service)
 			name := service.Name
-			templateName = filepath.Join(templateLocation, name+"svc.yaml")
-			valueFile[name] = values.value
+			templateName = filepath.Join(templateLocation, name+".yaml")
+			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = values.persistence
 		} else if resourceType.Kind == "ConfigMap" {
 			configMap := kubeapi.ConfigMap{}
@@ -162,32 +154,30 @@ func (c chartInfo) Create() (string, error) {
 				log.Fatal(err)
 			}
 			name := configMap.Name
-			templateName = filepath.Join(templateLocation, name+"-configmap.yaml")
+			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = configMapTemplate(configMap)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 		} else if resourceType.Kind == "Secret" {
-
 			secret := kubeapi.Secret{}
 			err := yaml.Unmarshal([]byte(yamlData), &secret)
 			if err != nil {
 				log.Fatal(err)
 			}
 			name := secret.Name
-			templateName = filepath.Join(templateLocation, name+"-secret.yaml")
+			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = secretTemplate(secret)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 		} else if resourceType.Kind == "PersistentVolumeClaim" {
-
 			pvc := kubeapi.PersistentVolumeClaim{}
 			err := yaml.Unmarshal([]byte(yamlData), &pvc)
 			if err != nil {
 				log.Fatal(err)
 			}
 			name := pvc.Name
-			templateName = filepath.Join(templateLocation, name+"-pvc.yaml")
+			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = pvcTemplate(pvc)
 			persistence = values.persistence
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 		} else if resourceType.Kind == "PersistentVolume" {
 			pv := kubeapi.PersistentVolume{}
 			err := yaml.Unmarshal([]byte(yamlData), &pv)
@@ -195,23 +185,21 @@ func (c chartInfo) Create() (string, error) {
 				log.Fatal(err)
 			}
 			name := pv.Name
-			templateName = filepath.Join(templateLocation, name+"-pv.yaml")
+			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = pvTemplate(pv)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 		} else if resourceType.Kind == "StorageClass" {
-
 			storageClass := storage.StorageClass{}
 			err := yaml.Unmarshal([]byte(yamlData), &storageClass)
 			if err != nil {
 				log.Fatal(err)
 			}
 			name := storageClass.Name
-			templateName = filepath.Join(templateLocation, name+"-storage.yaml")
+			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = storageClassTemplate(storageClass)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 
 		} else {
-
 			fmt.Printf("NOT IMPLEMENTED. ADD MAUALLY ")
 		}
 		err = ioutil.WriteFile(templateName, []byte(template), 0644)
@@ -233,6 +221,9 @@ func (c chartInfo) Create() (string, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	fmt.Println("CREATE : SUCCESSFULL")
+
 	return cdir, nil
 }
 
@@ -240,8 +231,8 @@ func podTemplate(pod kubeapi.Pod) (string, valueFileGenerator) {
 	volumes := ""
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
-	key := pod.ObjectMeta.Name
-	pod.ObjectMeta = generateObjectMetaTemplate(pod.ObjectMeta, key, value, "")
+	key := removeCharactersFromName(pod.ObjectMeta.Name)
+	pod.ObjectMeta = generateObjectMetaTemplate(pod.ObjectMeta, key, value, pod.ObjectMeta.Name)
 	//pod.Spec.Containers = generateTemplateForContainer(pod.Spec.Containers, value)
 	pod.Spec = generateTemplateForPodSpec(pod.Spec, key, value)
 	if len(pod.Spec.Volumes) != 0 {
@@ -263,7 +254,6 @@ func podTemplate(pod kubeapi.Pod) (string, valueFileGenerator) {
 		value:       value,
 		persistence: persistence,
 	}
-
 	return template, data
 }
 
@@ -271,8 +261,8 @@ func replicationControllerTemplate(rc kubeapi.ReplicationController) (string, va
 	volumes := ""
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
-	key := rc.ObjectMeta.Name
-	rc.ObjectMeta = generateObjectMetaTemplate(rc.ObjectMeta, key, value, "")
+	key := removeCharactersFromName(rc.ObjectMeta.Name)
+	rc.ObjectMeta = generateObjectMetaTemplate(rc.ObjectMeta, key, value, rc.ObjectMeta.Name)
 	rc.Spec.Template.Spec = generateTemplateForPodSpec(rc.Spec.Template.Spec, key, value)
 	if len(rc.Spec.Template.Spec.Volumes) != 0 {
 		volumes, persistence = generateTemplateForVolume(rc.Spec.Template.Spec.Volumes, key, value)
@@ -282,7 +272,7 @@ func replicationControllerTemplate(rc kubeapi.ReplicationController) (string, va
 	tempRcByte, err := yaml.Marshal(rc)
 	if err != nil {
 		log.Fatal(err)
-	}
+	} // TODO sauman rc status not removing
 	tempRc := removeEmptyFields(string(tempRcByte))
 	template := ""
 	if len(volumes) != 0 {
@@ -297,8 +287,8 @@ func replicaSetTemplate(replicaSet ext.ReplicaSet) (string, valueFileGenerator) 
 	volumes := ""
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
-	key := replicaSet.ObjectMeta.Name
-	replicaSet.ObjectMeta = generateObjectMetaTemplate(replicaSet.ObjectMeta, key, value, "")
+	key := removeCharactersFromName(replicaSet.ObjectMeta.Name)
+	replicaSet.ObjectMeta = generateObjectMetaTemplate(replicaSet.ObjectMeta, key, value,replicaSet.ObjectMeta.Name)
 	replicaSet.Spec.Template.Spec = generateTemplateForPodSpec(replicaSet.Spec.Template.Spec, key, value)
 	if len(replicaSet.Spec.Template.Spec.Volumes) != 0 {
 		volumes, persistence = generateTemplateForVolume(replicaSet.Spec.Template.Spec.Volumes, key, value)
@@ -326,15 +316,15 @@ func deploymentTemplate(deployment ext.Deployment) (string, valueFileGenerator) 
 	volumes := ""
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
-	name := deployment.ObjectMeta.Name
-	deployment.ObjectMeta = generateObjectMetaTemplate(deployment.ObjectMeta, name, value, "")
-	deployment.Spec.Template.Spec = generateTemplateForPodSpec(deployment.Spec.Template.Spec, name, value)
+	key := removeCharactersFromName(deployment.ObjectMeta.Name)
+	deployment.ObjectMeta = generateObjectMetaTemplate(deployment.ObjectMeta, key, value, deployment.ObjectMeta.Name)
+	deployment.Spec.Template.Spec = generateTemplateForPodSpec(deployment.Spec.Template.Spec, key, value)
 	if len(deployment.Spec.Template.Spec.Volumes) != 0 {
-		volumes, persistence = generateTemplateForVolume(deployment.Spec.Template.Spec.Volumes, name, value)
+		volumes, persistence = generateTemplateForVolume(deployment.Spec.Template.Spec.Volumes, key, value)
 		deployment.Spec.Template.Spec.Volumes = nil
 	}
 	if len(string(deployment.Spec.Strategy.Type)) != 0 {
-		deployment.Spec.Strategy.Type = ext.DeploymentStrategyType(fmt.Sprintf("{{.Values.%sDeploymentStrategy}}", deployment.ObjectMeta.Name))
+		deployment.Spec.Strategy.Type = ext.DeploymentStrategyType(fmt.Sprintf("{{.Values.%sDeploymentStrategy}}", key))
 		//generateTemplateForSingleValue(string(deployment.Spec.Strategy.Type), "DeploymentStrategy", value)
 
 		value["DeploymentStrategy"] = deployment.Spec.Strategy.Type //TODO test
@@ -358,8 +348,8 @@ func daemonsetTemplate(daemonset ext.DaemonSet) (string, valueFileGenerator) {
 	volumes := ""
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
-	key := daemonset.ObjectMeta.Name
-	daemonset.ObjectMeta = generateObjectMetaTemplate(daemonset.ObjectMeta, key, value, "")
+	key := removeCharactersFromName(daemonset.ObjectMeta.Name)
+	daemonset.ObjectMeta = generateObjectMetaTemplate(daemonset.ObjectMeta, key, value, daemonset.ObjectMeta.Name)
 	daemonset.Spec.Template.Spec = generateTemplateForPodSpec(daemonset.Spec.Template.Spec, key, value)
 	if len(daemonset.Spec.Template.Spec.Volumes) != 0 {
 		volumes, persistence = generateTemplateForVolume(daemonset.Spec.Template.Spec.Volumes, key, value)
@@ -389,11 +379,11 @@ func petsetTemplate(petset apps.PetSet) (string, valueFileGenerator) {
 	volumes := ""
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
-	key := petset.ObjectMeta.Name
-	petset.ObjectMeta = generateObjectMetaTemplate(petset.ObjectMeta, key, value, "")
+	key := removeCharactersFromName(petset.ObjectMeta.Name)
+	petset.ObjectMeta = generateObjectMetaTemplate(petset.ObjectMeta, key, value, petset.ObjectMeta.Name)
 	if len(petset.Spec.ServiceName) != 0 {
-		petset.Spec.ServiceName = fmt.Sprintf("{{.Values.%s.ServiceName}}", petset.ObjectMeta.Name)
-		value[key] = petset.Spec.ServiceName //generateTemplateForSingleValue(petset.Spec.ServiceName, "ServiceName", value)
+		petset.Spec.ServiceName = fmt.Sprintf("{{.Values.%s.ServiceName}}",key)
+		value["ServiceName"] = petset.Spec.ServiceName //generateTemplateForSingleValue(petset.Spec.ServiceName, "ServiceName", value)
 	}
 	petset.Spec.Template.Spec = generateTemplateForPodSpec(petset.Spec.Template.Spec, key, value)
 	if len(petset.Spec.Template.Spec.Volumes) != 0 {
@@ -418,8 +408,8 @@ func jobTemplate(job batch.Job) (string, valueFileGenerator) {
 	volumes := ""
 	persistence := make(map[string]interface{}, 0)
 	value := make(map[string]interface{}, 0)
-	key := job.ObjectMeta.Name
-	job.ObjectMeta = generateObjectMetaTemplate(job.ObjectMeta, key, value, "")
+	key := removeCharactersFromName(job.ObjectMeta.Name)
+	job.ObjectMeta = generateObjectMetaTemplate(job.ObjectMeta, key, value, job.ObjectMeta.Name)
 	job.Spec.Template.Spec = generateTemplateForPodSpec(job.Spec.Template.Spec, key, value)
 	if len(job.Spec.Template.Spec.Volumes) != 0 {
 		volumes, persistence = generateTemplateForVolume(job.Spec.Template.Spec.Volumes, key, value)
@@ -443,20 +433,22 @@ func jobTemplate(job batch.Job) (string, valueFileGenerator) {
 
 func serviceTemplate(svc kubeapi.Service) (string, valueFileGenerator) {
 	value := make(map[string]interface{}, 0)
-	key := svc.ObjectMeta.Name
-	svc.ObjectMeta = generateObjectMetaTemplate(svc.ObjectMeta, key, value, "")
+	key := removeCharactersFromName(svc.ObjectMeta.Name)
+	svc.ObjectMeta = generateObjectMetaTemplate(svc.ObjectMeta, key, value, svc.ObjectMeta.Name)
 	svc.Spec = generateServiceSpecTemplate(svc.Spec, key, value)
 	svcData, err := yaml.Marshal(svc)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return string(svcData), valueFileGenerator{value: value}
+	service := removeEmptyFields(string(svcData))
+	return string(service), valueFileGenerator{value: value}
 }
 
 func configMapTemplate(configMap kubeapi.ConfigMap) (string, valueFileGenerator) {
 	value := make(map[string]interface{}, 0)
-	key := configMap.ObjectMeta.Name
-	configMap.ObjectMeta = generateObjectMetaTemplate(configMap.ObjectMeta, key, value, "")
+	key := removeCharactersFromName(configMap.ObjectMeta.Name)
+	configMap.ObjectMeta = generateObjectMetaTemplate(configMap.ObjectMeta, key, value, configMap.ObjectMeta.Name)
+	configMap.ObjectMeta.Name = key // not using release name befor configmap
 	configMapData, err := yaml.Marshal(configMap)
 	if err != nil {
 		log.Fatal(err)
@@ -473,8 +465,9 @@ func configMapTemplate(configMap kubeapi.ConfigMap) (string, valueFileGenerator)
 func secretTemplate(secret kubeapi.Secret) (string, valueFileGenerator) {
 	value := make(map[string]interface{}, 0)
 	secretDataMap := make(map[string]interface{}, 0)
-	key := secret.ObjectMeta.Name
-	secret.ObjectMeta = generateObjectMetaTemplate(secret.ObjectMeta, key, value, key)
+	key := removeCharactersFromName(secret.ObjectMeta.Name)
+	secret.ObjectMeta = generateObjectMetaTemplate(secret.ObjectMeta, key, value, secret.ObjectMeta.Name)
+	secret.ObjectMeta.Name = key
 	if len(secret.Data) != 0 {
 		for k, v := range secret.Data {
 			value[k] = v
@@ -498,9 +491,8 @@ func secretTemplate(secret kubeapi.Secret) (string, valueFileGenerator) {
 func pvcTemplate(pvc kubeapi.PersistentVolumeClaim) (string, valueFileGenerator) {
 	tempValue := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
-	key := pvc.ObjectMeta.Name
-	extraTag := key
-	pvc.ObjectMeta = generateObjectMetaTemplate(pvc.ObjectMeta, key, tempValue, extraTag)
+	key := removeCharactersFromName(pvc.ObjectMeta.Name)
+	pvc.ObjectMeta = generateObjectMetaTemplate(pvc.ObjectMeta, key, tempValue, pvc.ObjectMeta.Name)
 	pvc.Spec = generatePersistentVolumeClaimSpec(pvc.Spec, key, tempValue)
 	pvcData, err := yaml.Marshal(pvc)
 	if err != nil {
@@ -515,22 +507,24 @@ func pvcTemplate(pvc kubeapi.PersistentVolumeClaim) (string, valueFileGenerator)
 
 func pvTemplate(pv kubeapi.PersistentVolume) (string, valueFileGenerator) {
 	value := make(map[string]interface{}, 0)
-	key := pv.ObjectMeta.Name
-	pv.ObjectMeta = generateObjectMetaTemplate(pv.ObjectMeta, key, value, "")
+	key := removeCharactersFromName(pv.ObjectMeta.Name)
+	pv.ObjectMeta = generateObjectMetaTemplate(pv.ObjectMeta, key, value, pv.Name)
+	pv.Spec = generatePersistentVolumeSpec(pv.Spec, key, value)
 	pvData, err := yaml.Marshal(pv)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return string(pvData), valueFileGenerator{value: value}
+	temp := removeEmptyFields(string(pvData))
+	return string(temp), valueFileGenerator{value: value}
 }
 
 func storageClassTemplate(storageClass storage.StorageClass) (string, valueFileGenerator) {
 	value := make(map[string]interface{}, 0)
-	key := storageClass.ObjectMeta.Name
-	storageClass.ObjectMeta = generateObjectMetaTemplate(storageClass.ObjectMeta, key, value, "")
+	key := removeCharactersFromName(storageClass.ObjectMeta.Name)
+	storageClass.ObjectMeta = generateObjectMetaTemplate(storageClass.ObjectMeta, key, value, storageClass.ObjectMeta.Name)
 	value["Provisioner"] = storageClass.Provisioner
-	storageClass.Provisioner = fmt.Sprintf("{{.Values.%s.Provisioner}}", storageClass.ObjectMeta.Name)
-	//storageClass.Parameters = TODO sauman map conversion
+	storageClass.Provisioner = fmt.Sprintf("{{.Values.%s.Provisioner}}", key)
+	storageClass.Parameters = mapToValueMaker(storageClass.Parameters, value, key)
 	storageData, err := yaml.Marshal(storageClass)
 	if err != nil {
 		log.Fatal(err)
@@ -567,4 +561,12 @@ func chartMetaData(name string) chart.Metadata {
 		ApiVersion:  "v1",
 	}
 	return cfile
+}
+
+func mapToValueMaker(mp map[string]string, value map[string]interface{}, key string) map[string]string {
+	for k, v := range mp {
+		value[k] = v
+		mp[k] = fmt.Sprintf("{{.Values.%s.%s}}", key, k)
+	}
+	return mp
 }

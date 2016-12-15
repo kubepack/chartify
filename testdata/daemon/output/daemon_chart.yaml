@@ -1,0 +1,23 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  labels:
+    app: datastore
+    chart: '{{.Chart.Name}}-{{.Chart.Version}}'
+    heritage: '{{.Release.Service}}'
+    release: '{{.Release.Name}}'
+  name: '{{ template "fullname" . }}-datastore'
+spec:
+  template:
+    metadata:
+      labels:
+        app: datastore-shard
+    spec:
+      containers:
+      - image: '{{.Values.datastore.datastoreshard.image}}:{{.Values.datastore.datastoreshard.imageTag}}'
+        name: datastore-shard
+        ports:
+        - containerPort: 9042
+          name: main
+      nodeSelector:
+        app: datastore-node

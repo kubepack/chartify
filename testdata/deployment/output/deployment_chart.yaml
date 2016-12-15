@@ -1,0 +1,20 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    chart: '{{.Chart.Name}}-{{.Chart.Version}}'
+    heritage: '{{.Release.Service}}'
+    release: '{{.Release.Name}}'
+  name: '{{ template "fullname" . }}-nginx-deployment'
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: '{{.Values.nginxdeployment.nginx.image}}:{{.Values.nginxdeployment.nginx.imageTag}}'
+        name: nginx
+        ports:
+        - containerPort: 80

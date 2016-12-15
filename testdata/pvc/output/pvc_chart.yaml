@@ -1,0 +1,16 @@
+{{- if .Values.persistence.myclaim.enabled -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    chart: '{{.Chart.Name}}-{{.Chart.Version}}'
+    heritage: '{{.Release.Service}}'
+    release: '{{.Release.Name}}'
+  name: '{{ template "fullname" . }}-myclaim'
+spec:
+  accessModes:
+  - '{{.Values.persistence.myclaim.AccessMode}}'
+  resources:
+    requests:
+      storage: 8Gi
+{{- end -}}
