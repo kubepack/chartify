@@ -1,0 +1,5 @@
+myclaim: null
+persistence:
+  myclaim:
+    AccessMode: ReadWriteOnce
+    enabled: true

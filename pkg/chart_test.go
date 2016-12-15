@@ -117,3 +117,39 @@ func TestChartForPv(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, string(actualTemplate), string(template))
 }
+
+func TestChartForService(t *testing.T) {
+	yamlFile, err := ioutil.ReadFile("../testdata/service/input/service.yaml")
+	assert.Nil(t, err)
+	svc := kubeapi.Service{}
+	err = yaml.Unmarshal(yamlFile, &svc)
+	assert.Nil(t, err)
+	template, _ := serviceTemplate(svc)
+	actualTemplate, err := ioutil.ReadFile("../testdata/service/output/service_chart.yaml")
+	assert.Nil(t, err)
+	assert.Equal(t, string(actualTemplate), string(template))
+}
+
+func TestChartForPvc(t *testing.T) {
+	yamlFile, err := ioutil.ReadFile("../testdata/pvc/input/pvc.yaml")
+	assert.Nil(t, err)
+	pvc := kubeapi.PersistentVolumeClaim{}
+	err = yaml.Unmarshal(yamlFile, &pvc)
+	assert.Nil(t, err)
+	template, _ := pvcTemplate(pvc)
+	actualTemplate, err := ioutil.ReadFile("../testdata/pvc/output/pvc_chart.yaml")
+	assert.Nil(t, err)
+	assert.Equal(t, string(actualTemplate), string(template))
+}
+
+func TestChartForDeployment(t *testing.T) {
+	yamlFile, err := ioutil.ReadFile("../testdata/deployment/input/deployment.yaml")
+	assert.Nil(t, err)
+	deployment := ext.Deployment{}
+	err = yaml.Unmarshal(yamlFile, &deployment)
+	assert.Nil(t, err)
+	template, _ := deploymentTemplate(deployment)
+	actualTemplate, err := ioutil.ReadFile("../testdata/deployment/output/deployment_chart.yaml")
+	assert.Nil(t, err)
+	assert.Equal(t, string(actualTemplate), string(template))
+}

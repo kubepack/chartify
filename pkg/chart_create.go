@@ -68,7 +68,7 @@ func (c chartInfo) Create() (string, error) {
 			name := pod.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = podTemplate(pod)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
 		} else if resourceType.Kind == "ReplicationController" {
 			rc := kubeapi.ReplicationController{}
@@ -79,7 +79,7 @@ func (c chartInfo) Create() (string, error) {
 			name := rc.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = replicationControllerTemplate(rc)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = values.persistence
 		} else if resourceType.Kind == "Deployment" {
 			deployment := ext.Deployment{}
@@ -90,7 +90,7 @@ func (c chartInfo) Create() (string, error) {
 				log.Fatal(err)
 			}
 			template, values = deploymentTemplate(deployment)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = values.persistence
 		} else if resourceType.Kind == "Job" {
 			job := batch.Job{}
@@ -101,7 +101,7 @@ func (c chartInfo) Create() (string, error) {
 			name := job.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = jobTemplate(job)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = values.persistence
 		} else if resourceType.Kind == "DaemonSet" {
 			daemonset := ext.DaemonSet{}
@@ -112,7 +112,7 @@ func (c chartInfo) Create() (string, error) {
 			name := daemonset.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = daemonsetTemplate(daemonset)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = values.persistence
 		} else if resourceType.Kind == "ReplicaSet" {
 			rcSet := ext.ReplicaSet{}
@@ -123,7 +123,7 @@ func (c chartInfo) Create() (string, error) {
 			name := rcSet.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = replicaSetTemplate(rcSet)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = values.persistence
 		} else if resourceType.Kind == "PetSet" {
 			petset := apps.PetSet{}
@@ -134,7 +134,7 @@ func (c chartInfo) Create() (string, error) {
 			name := petset.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = petsetTemplate(petset)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = values.persistence
 		} else if resourceType.Kind == "Service" {
 			service := kubeapi.Service{}
@@ -145,7 +145,7 @@ func (c chartInfo) Create() (string, error) {
 			template, values = serviceTemplate(service)
 			name := service.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = values.persistence
 		} else if resourceType.Kind == "ConfigMap" {
 			configMap := kubeapi.ConfigMap{}
@@ -156,7 +156,7 @@ func (c chartInfo) Create() (string, error) {
 			name := configMap.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = configMapTemplate(configMap)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 		} else if resourceType.Kind == "Secret" {
 			secret := kubeapi.Secret{}
 			err := yaml.Unmarshal([]byte(yamlData), &secret)
@@ -166,7 +166,7 @@ func (c chartInfo) Create() (string, error) {
 			name := secret.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = secretTemplate(secret)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 		} else if resourceType.Kind == "PersistentVolumeClaim" {
 			pvc := kubeapi.PersistentVolumeClaim{}
 			err := yaml.Unmarshal([]byte(yamlData), &pvc)
@@ -177,7 +177,7 @@ func (c chartInfo) Create() (string, error) {
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = pvcTemplate(pvc)
 			persistence = values.persistence
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 		} else if resourceType.Kind == "PersistentVolume" {
 			pv := kubeapi.PersistentVolume{}
 			err := yaml.Unmarshal([]byte(yamlData), &pv)
@@ -187,7 +187,7 @@ func (c chartInfo) Create() (string, error) {
 			name := pv.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = pvTemplate(pv)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 		} else if resourceType.Kind == "StorageClass" {
 			storageClass := storage.StorageClass{}
 			err := yaml.Unmarshal([]byte(yamlData), &storageClass)
@@ -197,7 +197,7 @@ func (c chartInfo) Create() (string, error) {
 			name := storageClass.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = storageClassTemplate(storageClass)
-			valueFile[name] = values.value
+			valueFile[removeCharactersFromName(name)] = values.value
 
 		} else {
 			fmt.Printf("NOT IMPLEMENTED. ADD MAUALLY ")
@@ -325,7 +325,7 @@ func deploymentTemplate(deployment ext.Deployment) (string, valueFileGenerator) 
 		deployment.Spec.Template.Spec.Volumes = nil
 	}
 	if len(string(deployment.Spec.Strategy.Type)) != 0 {
-		deployment.Spec.Strategy.Type = ext.DeploymentStrategyType(fmt.Sprintf("{{.Values.%sDeploymentStrategy}}", deployment.ObjectMeta.Name))
+		deployment.Spec.Strategy.Type = ext.DeploymentStrategyType(fmt.Sprintf("{{.Values.%sDeploymentStrategy}}", key))
 		//generateTemplateForSingleValue(string(deployment.Spec.Strategy.Type), "DeploymentStrategy", value)
 
 		value["DeploymentStrategy"] = deployment.Spec.Strategy.Type //TODO test
@@ -441,7 +441,8 @@ func serviceTemplate(svc kubeapi.Service) (string, valueFileGenerator) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return string(svcData), valueFileGenerator{value: value}
+	service := removeEmptyFields(string(svcData))
+	return string(service), valueFileGenerator{value: value}
 }
 
 func configMapTemplate(configMap kubeapi.ConfigMap) (string, valueFileGenerator) {
