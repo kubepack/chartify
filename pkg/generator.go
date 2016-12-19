@@ -280,8 +280,12 @@ func cleanUpObjectMeta(m *kapi.ObjectMeta) {
 }
 
 func cleanUpPodSpec(p *kapi.PodSpec) {
-	p.TerminationGracePeriodSeconds = nil
 	p.DNSPolicy = kapi.DNSPolicy("")
+	p.NodeName = ""
+	if p.ServiceAccountName == "default" {
+		p.ServiceAccountName = ""
+	}
+	p.TerminationGracePeriodSeconds = nil
 	for i, c := range p.Containers {
 		c.TerminationMessagePath = ""
 		p.Containers[i] = c
