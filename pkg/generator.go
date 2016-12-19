@@ -66,6 +66,7 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&pod.ObjectMeta)
+			cleanUpPodSpec(&pod.Spec)
 
 			name := pod.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
@@ -79,6 +80,7 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&rc.ObjectMeta)
+			cleanUpPodSpec(&rc.Spec.Template.Spec)
 
 			name := rc.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
@@ -92,6 +94,7 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&deployment.ObjectMeta)
+			cleanUpPodSpec(&deployment.Spec.Template.Spec)
 
 			name := deployment.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
@@ -107,6 +110,9 @@ func (g Generator) Create() (string, error) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			cleanUpObjectMeta(&job.ObjectMeta)
+			cleanUpPodSpec(&job.Spec.Template.Spec)
+
 			name := job.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = jobTemplate(job)
@@ -119,6 +125,7 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&daemonset.ObjectMeta)
+			cleanUpPodSpec(&daemonset.Spec.Template.Spec)
 
 			name := daemonset.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
@@ -132,6 +139,7 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&rcSet.ObjectMeta)
+			cleanUpPodSpec(&rcSet.Spec.Template.Spec)
 
 			name := rcSet.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
@@ -145,6 +153,7 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&statefulset.ObjectMeta)
+			cleanUpPodSpec(&statefulset.Spec.Template.Spec)
 
 			name := statefulset.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
@@ -262,6 +271,17 @@ func cleanUpObjectMeta(m *kapi.ObjectMeta) {
 	m.Generation = 0
 	m.CreationTimestamp = t
 	m.DeletionTimestamp = nil
+}
+
+func cleanUpPodSpec(p *kapi.PodSpec) {
+	p.TerminationGracePeriodSeconds = nil
+	p.DNSPolicy = kapi.DNSPolicy("")
+	for _, c := range p.Containers {
+		c.TerminationMessagePath = ""
+	}
+	for _, c := range p.InitContainers {
+		c.TerminationMessagePath = ""
+	}
 }
 
 func podTemplate(pod kapi.Pod) (string, valueFileGenerator) {
