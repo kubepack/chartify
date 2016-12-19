@@ -15,6 +15,7 @@ import (
 	"k8s.io/kubernetes/pkg/apis/batch"
 	kext "k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/apis/storage"
+	"k8s.io/kubernetes/pkg/types"
 )
 
 type Generator struct {
@@ -64,6 +65,8 @@ func (g Generator) Create() (string, error) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			cleanUpObjectMeta(&pod.ObjectMeta)
+
 			name := pod.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = podTemplate(pod)
@@ -75,6 +78,8 @@ func (g Generator) Create() (string, error) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			cleanUpObjectMeta(&rc.ObjectMeta)
+
 			name := rc.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = replicationControllerTemplate(rc)
@@ -83,6 +88,11 @@ func (g Generator) Create() (string, error) {
 		} else if resourceType.Kind == "Deployment" {
 			deployment := kext.Deployment{}
 			err = yaml.Unmarshal([]byte(yamlData), &deployment)
+			if err != nil {
+				log.Fatal(err)
+			}
+			cleanUpObjectMeta(&deployment.ObjectMeta)
+
 			name := deployment.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			if err != nil {
@@ -108,6 +118,8 @@ func (g Generator) Create() (string, error) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			cleanUpObjectMeta(&daemonset.ObjectMeta)
+
 			name := daemonset.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = daemonsetTemplate(daemonset)
@@ -119,6 +131,8 @@ func (g Generator) Create() (string, error) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			cleanUpObjectMeta(&rcSet.ObjectMeta)
+
 			name := rcSet.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = replicaSetTemplate(rcSet)
@@ -130,6 +144,8 @@ func (g Generator) Create() (string, error) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			cleanUpObjectMeta(&statefulset.ObjectMeta)
+
 			name := statefulset.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = statefulsetTemplate(statefulset)
@@ -141,6 +157,8 @@ func (g Generator) Create() (string, error) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			cleanUpObjectMeta(&service.ObjectMeta)
+
 			template, values = serviceTemplate(service)
 			name := service.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
@@ -152,6 +170,8 @@ func (g Generator) Create() (string, error) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			cleanUpObjectMeta(&configMap.ObjectMeta)
+
 			name := configMap.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = configMapTemplate(configMap)
@@ -162,6 +182,8 @@ func (g Generator) Create() (string, error) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			cleanUpObjectMeta(&secret.ObjectMeta)
+
 			name := secret.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = secretTemplate(secret)
@@ -172,6 +194,8 @@ func (g Generator) Create() (string, error) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			cleanUpObjectMeta(&pvc.ObjectMeta)
+
 			name := pvc.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = pvcTemplate(pvc)
@@ -183,6 +207,8 @@ func (g Generator) Create() (string, error) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			cleanUpObjectMeta(&pv.ObjectMeta)
+
 			name := pv.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = pvTemplate(pv)
@@ -193,11 +219,12 @@ func (g Generator) Create() (string, error) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			cleanUpObjectMeta(&storageClass.ObjectMeta)
+
 			name := storageClass.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = storageClassTemplate(storageClass)
 			valueFile[removeCharactersFromName(name)] = values.value
-
 		} else {
 			fmt.Printf("NOT IMPLEMENTED. ADD MAUALLY ")
 		}
@@ -224,6 +251,17 @@ func (g Generator) Create() (string, error) {
 	fmt.Println("CREATE : SUCCESSFULL")
 
 	return cdir, nil
+}
+
+func cleanUpObjectMeta(m *kapi.ObjectMeta) {
+	var t unversioned.Time
+	m.GenerateName = ""
+	m.SelfLink = ""
+	m.UID = types.UID("")
+	m.ResourceVersion = ""
+	m.Generation = 0
+	m.CreationTimestamp = t
+	m.DeletionTimestamp = nil
 }
 
 func podTemplate(pod kapi.Pod) (string, valueFileGenerator) {
