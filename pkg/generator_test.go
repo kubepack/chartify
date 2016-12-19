@@ -161,12 +161,12 @@ func TestChartForMultipleObject(t *testing.T) {
 	yamlFiles := readLocalFiles("../testdata/mix_objects/input")
 	tmp, err := ioutil.TempDir(os.TempDir(), "test")
 	assert.Nil(t, err)
-	chartData := chartInfo{
-		chartName: "test",
-		yamlFiles: yamlFiles,
-		location:  tmp,
+	g := Generator{
+		ChartName: "test",
+		YamlFiles: yamlFiles,
+		Location:  tmp,
 	}
-	chdir, _ := chartData.Create()
+	chdir, _ := g.Create()
 	files, err := ioutil.ReadDir("../testdata/mix_objects/output")
 	assert.Nil(t, err)
 	for _, v := range files {

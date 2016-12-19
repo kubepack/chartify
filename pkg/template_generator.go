@@ -332,7 +332,6 @@ func addTemplateImageValue(containerName string, image string, key string, conta
 }
 
 func addVolumeToTemplateForPod(templatePod string, templatevolumes string) string {
-
 	templatevolumes = makeSpaceForVolume(templatevolumes, "  ")
 	template := addVolumeInPodTemplate(templatePod, templatevolumes)
 	return template

@@ -9,30 +9,28 @@ import (
 
 	"github.com/ghodss/yaml"
 	"k8s.io/helm/pkg/proto/hapi/chart"
-	kubeapi "k8s.io/kubernetes/pkg/api"
+	kapi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/apis/apps"
 	"k8s.io/kubernetes/pkg/apis/batch"
-	ext "k8s.io/kubernetes/pkg/apis/extensions"
+	kext "k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/apis/storage"
 )
 
-func (c chartInfo) Create() (string, error) {
-	chartfile := chartMetaData(c.chartName)
+type Generator struct {
+	Location  string
+	ChartName string
+	YamlFiles []string
+}
+
+func (g Generator) Create() (string, error) {
+	chartfile := chartMetaData(g.ChartName)
 	imageTag := "" //TODO
-	path, err := filepath.Abs(c.location)
-	if err != nil {
-		return path, err
-	}
-	if fi, err := os.Stat(path); err != nil {
-		return path, err
-	} else if !fi.IsDir() {
-		return path, fmt.Errorf("no such directory %s", path)
-	}
-	fmt.Printf("Creating Custom Chart...\n")
-	cdir := filepath.Join(path, chartfile.Name)
-	if fi, err := os.Stat(cdir); err == nil && !fi.IsDir() {
-		return cdir, fmt.Errorf("file %s already exists and is not a directory", cdir)
+	fmt.Println("Creating Custom Chart...")
+	cdir := filepath.Join(g.Location, chartfile.Name)
+	fi, err := os.Stat(cdir)
+	if err == nil && !fi.IsDir() {
+		return cdir, fmt.Errorf("%s already exists and is not a directory", cdir)
 	}
 	if err := os.MkdirAll(cdir, 0755); err != nil {
 		return cdir, err
@@ -52,7 +50,7 @@ func (c chartInfo) Create() (string, error) {
 	templateLocation := filepath.Join(cdir, TemplatesDir)
 	err = os.MkdirAll(templateLocation, 0755)
 	template := ""
-	for _, yamlData := range c.yamlFiles {
+	for _, yamlData := range g.YamlFiles {
 		err = yaml.Unmarshal([]byte(yamlData), &resourceType)
 		if err != nil {
 			log.Fatal(err)
@@ -61,7 +59,7 @@ func (c chartInfo) Create() (string, error) {
 		values := valueFileGenerator{}
 		templateName := ""
 		if resourceType.Kind == "Pod" {
-			pod := kubeapi.Pod{}
+			pod := kapi.Pod{}
 			err = yaml.Unmarshal([]byte(yamlData), &pod)
 			if err != nil {
 				log.Fatal(err)
@@ -72,7 +70,7 @@ func (c chartInfo) Create() (string, error) {
 			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
 		} else if resourceType.Kind == "ReplicationController" {
-			rc := kubeapi.ReplicationController{}
+			rc := kapi.ReplicationController{}
 			err = yaml.Unmarshal([]byte(yamlData), &rc)
 			if err != nil {
 				log.Fatal(err)
@@ -83,7 +81,7 @@ func (c chartInfo) Create() (string, error) {
 			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
 		} else if resourceType.Kind == "Deployment" {
-			deployment := ext.Deployment{}
+			deployment := kext.Deployment{}
 			err = yaml.Unmarshal([]byte(yamlData), &deployment)
 			name := deployment.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
@@ -105,7 +103,7 @@ func (c chartInfo) Create() (string, error) {
 			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
 		} else if resourceType.Kind == "DaemonSet" {
-			daemonset := ext.DaemonSet{}
+			daemonset := kext.DaemonSet{}
 			err = yaml.Unmarshal([]byte(yamlData), &daemonset)
 			if err != nil {
 				log.Fatal(err)
@@ -116,7 +114,7 @@ func (c chartInfo) Create() (string, error) {
 			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
 		} else if resourceType.Kind == "ReplicaSet" {
-			rcSet := ext.ReplicaSet{}
+			rcSet := kext.ReplicaSet{}
 			err = yaml.Unmarshal([]byte(yamlData), &rcSet)
 			if err != nil {
 				log.Fatal(err)
@@ -138,7 +136,7 @@ func (c chartInfo) Create() (string, error) {
 			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
 		} else if resourceType.Kind == "Service" {
-			service := kubeapi.Service{}
+			service := kapi.Service{}
 			err := yaml.Unmarshal([]byte(yamlData), &service)
 			if err != nil {
 				log.Fatal(err)
@@ -149,7 +147,7 @@ func (c chartInfo) Create() (string, error) {
 			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
 		} else if resourceType.Kind == "ConfigMap" {
-			configMap := kubeapi.ConfigMap{}
+			configMap := kapi.ConfigMap{}
 			err := yaml.Unmarshal([]byte(yamlData), &configMap)
 			if err != nil {
 				log.Fatal(err)
@@ -159,7 +157,7 @@ func (c chartInfo) Create() (string, error) {
 			template, values = configMapTemplate(configMap)
 			valueFile[removeCharactersFromName(name)] = values.value
 		} else if resourceType.Kind == "Secret" {
-			secret := kubeapi.Secret{}
+			secret := kapi.Secret{}
 			err := yaml.Unmarshal([]byte(yamlData), &secret)
 			if err != nil {
 				log.Fatal(err)
@@ -169,7 +167,7 @@ func (c chartInfo) Create() (string, error) {
 			template, values = secretTemplate(secret)
 			valueFile[removeCharactersFromName(name)] = values.value
 		} else if resourceType.Kind == "PersistentVolumeClaim" {
-			pvc := kubeapi.PersistentVolumeClaim{}
+			pvc := kapi.PersistentVolumeClaim{}
 			err := yaml.Unmarshal([]byte(yamlData), &pvc)
 			if err != nil {
 				log.Fatal(err)
@@ -180,7 +178,7 @@ func (c chartInfo) Create() (string, error) {
 			persistence = addPersistence(persistence, values.persistence)
 			//valueFile[removeCharactersFromName(name)] = values.value
 		} else if resourceType.Kind == "PersistentVolume" {
-			pv := kubeapi.PersistentVolume{}
+			pv := kapi.PersistentVolume{}
 			err := yaml.Unmarshal([]byte(yamlData), &pv)
 			if err != nil {
 				log.Fatal(err)
@@ -228,7 +226,7 @@ func (c chartInfo) Create() (string, error) {
 	return cdir, nil
 }
 
-func podTemplate(pod kubeapi.Pod) (string, valueFileGenerator) {
+func podTemplate(pod kapi.Pod) (string, valueFileGenerator) {
 	volumes := ""
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
@@ -258,7 +256,7 @@ func podTemplate(pod kubeapi.Pod) (string, valueFileGenerator) {
 	return template, data
 }
 
-func replicationControllerTemplate(rc kubeapi.ReplicationController) (string, valueFileGenerator) {
+func replicationControllerTemplate(rc kapi.ReplicationController) (string, valueFileGenerator) {
 	volumes := ""
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
@@ -284,7 +282,7 @@ func replicationControllerTemplate(rc kubeapi.ReplicationController) (string, va
 	return template, valueFileGenerator{value: value, persistence: persistence}
 }
 
-func replicaSetTemplate(replicaSet ext.ReplicaSet) (string, valueFileGenerator) {
+func replicaSetTemplate(replicaSet kext.ReplicaSet) (string, valueFileGenerator) {
 	volumes := ""
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
@@ -313,7 +311,7 @@ func replicaSetTemplate(replicaSet ext.ReplicaSet) (string, valueFileGenerator) 
 	}
 }
 
-func deploymentTemplate(deployment ext.Deployment) (string, valueFileGenerator) {
+func deploymentTemplate(deployment kext.Deployment) (string, valueFileGenerator) {
 	volumes := ""
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
@@ -325,7 +323,7 @@ func deploymentTemplate(deployment ext.Deployment) (string, valueFileGenerator) 
 		deployment.Spec.Template.Spec.Volumes = nil
 	}
 	if len(string(deployment.Spec.Strategy.Type)) != 0 {
-		deployment.Spec.Strategy.Type = ext.DeploymentStrategyType(fmt.Sprintf("{{.Values.%sDeploymentStrategy}}", key))
+		deployment.Spec.Strategy.Type = kext.DeploymentStrategyType(fmt.Sprintf("{{.Values.%sDeploymentStrategy}}", key))
 		//generateTemplateForSingleValue(string(deployment.Spec.Strategy.Type), "DeploymentStrategy", value)
 
 		value["DeploymentStrategy"] = deployment.Spec.Strategy.Type //TODO test
@@ -345,7 +343,7 @@ func deploymentTemplate(deployment ext.Deployment) (string, valueFileGenerator) 
 	return template, valueFileGenerator{value: value, persistence: persistence}
 }
 
-func daemonsetTemplate(daemonset ext.DaemonSet) (string, valueFileGenerator) {
+func daemonsetTemplate(daemonset kext.DaemonSet) (string, valueFileGenerator) {
 	volumes := ""
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
@@ -432,7 +430,7 @@ func jobTemplate(job batch.Job) (string, valueFileGenerator) {
 
 }
 
-func serviceTemplate(svc kubeapi.Service) (string, valueFileGenerator) {
+func serviceTemplate(svc kapi.Service) (string, valueFileGenerator) {
 	value := make(map[string]interface{}, 0)
 	key := removeCharactersFromName(svc.ObjectMeta.Name)
 	svc.ObjectMeta = generateObjectMetaTemplate(svc.ObjectMeta, key, value, svc.ObjectMeta.Name)
@@ -445,7 +443,7 @@ func serviceTemplate(svc kubeapi.Service) (string, valueFileGenerator) {
 	return string(service), valueFileGenerator{value: value}
 }
 
-func configMapTemplate(configMap kubeapi.ConfigMap) (string, valueFileGenerator) {
+func configMapTemplate(configMap kapi.ConfigMap) (string, valueFileGenerator) {
 	value := make(map[string]interface{}, 0)
 	key := removeCharactersFromName(configMap.ObjectMeta.Name)
 	configMap.ObjectMeta = generateObjectMetaTemplate(configMap.ObjectMeta, key, value, configMap.ObjectMeta.Name)
@@ -464,7 +462,7 @@ func configMapTemplate(configMap kubeapi.ConfigMap) (string, valueFileGenerator)
 	return string(data), valueFileGenerator{value: value}
 }
 
-func secretTemplate(secret kubeapi.Secret) (string, valueFileGenerator) {
+func secretTemplate(secret kapi.Secret) (string, valueFileGenerator) {
 	value := make(map[string]interface{}, 0)
 	secretDataMap := make(map[string]interface{}, 0)
 	key := removeCharactersFromName(secret.ObjectMeta.Name)
@@ -478,7 +476,7 @@ func secretTemplate(secret kubeapi.Secret) (string, valueFileGenerator) {
 	}
 	secret.Data = nil
 	value["Type"] = secret.Type
-	secret.Type = kubeapi.SecretType(fmt.Sprintf("{{.Values.%s.Type}}", key))
+	secret.Type = kapi.SecretType(fmt.Sprintf("{{.Values.%s.Type}}", key))
 	secretDataByte, err := yaml.Marshal(secret)
 	if err != nil {
 		log.Fatal(err)
@@ -490,7 +488,7 @@ func secretTemplate(secret kubeapi.Secret) (string, valueFileGenerator) {
 	return secretData, valueFileGenerator{value: value}
 }
 
-func pvcTemplate(pvc kubeapi.PersistentVolumeClaim) (string, valueFileGenerator) {
+func pvcTemplate(pvc kapi.PersistentVolumeClaim) (string, valueFileGenerator) {
 	tempValue := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
 	key := removeCharactersFromName(pvc.ObjectMeta.Name)
@@ -507,7 +505,7 @@ func pvcTemplate(pvc kubeapi.PersistentVolumeClaim) (string, valueFileGenerator)
 	return pvcTemplateData, valueFileGenerator{persistence: persistence}
 }
 
-func pvTemplate(pv kubeapi.PersistentVolume) (string, valueFileGenerator) {
+func pvTemplate(pv kapi.PersistentVolume) (string, valueFileGenerator) {
 	value := make(map[string]interface{}, 0)
 	key := removeCharactersFromName(pv.ObjectMeta.Name)
 	pv.ObjectMeta = generateObjectMetaTemplate(pv.ObjectMeta, key, value, pv.Name)
@@ -555,14 +553,12 @@ func addPersistence(persistence map[string]interface{}, elements map[string]inte
 }
 
 func chartMetaData(name string) chart.Metadata {
-
-	cfile := chart.Metadata{
+	return chart.Metadata{
 		Name:        name,
-		Description: "A Helm chart for Kubernetes",
+		Description: "Helm chart generated by https://github.com/appscode/chartify",
 		Version:     "0.1.0",
 		ApiVersion:  "v1",
 	}
-	return cfile
 }
 
 func mapToValueMaker(mp map[string]string, value map[string]interface{}, key string) map[string]string {
