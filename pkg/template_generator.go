@@ -240,7 +240,7 @@ func generateTemplateForContainer(containers []kapi.Container, key string, value
 		delete(containterValue, k)
 	}
 	for i, container := range containers {
-		containerName := removeCharactersFromName(container.Name)
+		containerName := generateSafeKey(container.Name)
 		container.Image = addTemplateImageValue(containerName, container.Image, key, containterValue)
 		if len(container.ImagePullPolicy) != 0 {
 			containterValue["ImagePullPolicy"] = string(container.ImagePullPolicy)
@@ -249,10 +249,10 @@ func generateTemplateForContainer(containers []kapi.Container, key string, value
 		if len(container.Env) != 0 {
 			for k, v := range container.Env {
 				if len(v.Value) != 0 {
-					tmp := removeCharactersFromName(v.Name)
+					tmp := generateSafeKey(v.Name)
 					containterValue[tmp] = v.Value
 					key := checkKeyValue(key)
-					container.Env[k].Value = fmt.Sprintf("{{.Values%s.%s.%s}}", key, removeCharactersFromName(container.Name), tmp) //TODO test
+					container.Env[k].Value = fmt.Sprintf("{{.Values%s.%s.%s}}", key, generateSafeKey(container.Name), tmp) //TODO test
 				}
 				// Secret of Configmap has to be deployed by chart. else value from wont work.
 				/*				if v.ValueFrom != nil {
@@ -265,7 +265,7 @@ func generateTemplateForContainer(containers []kapi.Container, key string, value
 			}
 		}
 		result[i] = container
-		value[removeCharactersFromName(container.Name)] = containterValue
+		value[generateSafeKey(container.Name)] = containterValue
 	}
 	return result
 }
@@ -564,7 +564,7 @@ func checkKeyValue(key string) string {
 	return key
 }
 
-func removeCharactersFromName(name string) string {
+func generateSafeKey(name string) string {
 	newName := ""
 	for _, v := range name {
 		if (v >= 'a' && v <= 'z') || (v >= 'A' && v <= 'Z') {
