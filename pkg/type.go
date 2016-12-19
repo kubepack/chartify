@@ -51,7 +51,6 @@ var (
 )
 
 type objects struct {
-	kubeContext            string
 	pods                   []string
 	replicationControllers []string
 	configMaps             []string

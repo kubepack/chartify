@@ -25,10 +25,6 @@ func CreateChart() *cobra.Command {
 				fmt.Println("ERROR : Provide a location for the chart file")
 				os.Exit(1)
 			}
-			if kubeObjects.kubeContext == "" {
-				fmt.Println("ERROR : Provide kube context name")
-				os.Exit(1)
-			}
 			chartData := chartInfo{
 				location:  checkLocation(location),
 				dir:       dir,
@@ -50,7 +46,6 @@ func CreateChart() *cobra.Command {
 	cmd.Flags().StringVar(&dir, "dir", "", "specify the directory of the yaml files")
 	cmd.Flags().StringVar(&location, "location", "", "specify the location where charts will be created. By default Home directory")
 	cmd.Flags().StringVar(&chartName, "chart_name", "", "specify the chart name")
-	cmd.Flags().StringVar(&kubeObjects.kubeContext, "kube_context", "", "specify the kube context name")
 	cmd.Flags().StringSliceVar(&kubeObjects.pods, "pods", kubeObjects.pods, "specify the names of pods (podname.namespace) to include them in chart")
 	cmd.Flags().StringSliceVar(&kubeObjects.replicationControllers, "rc", kubeObjects.replicationControllers, "specify the names of replication cotrollers (rcname.namespace) to include them in chart")
 	cmd.Flags().StringSliceVar(&kubeObjects.services, "services", kubeObjects.services, "specify the names of services to include them in chart")
@@ -60,7 +55,7 @@ func CreateChart() *cobra.Command {
 	cmd.Flags().StringSliceVar(&kubeObjects.persistentVolumeClaim, "pvc", kubeObjects.persistentVolumeClaim, "specify names of persistent volume claim")
 	cmd.Flags().StringSliceVar(&kubeObjects.statefulsets, "statefulsets", kubeObjects.statefulsets, "specify names of statefulsets(statefulset_name.namespace)")
 	cmd.Flags().StringSliceVar(&kubeObjects.jobs, "jobs", kubeObjects.jobs, "specify names of jobs")
-	cmd.Flags().StringSliceVar(&kubeObjects.replicaSet, "replica_sets", kubeObjects.replicaSet, "specify names of replica sets(replicaset_name.namespace)")
+	cmd.Flags().StringSliceVar(&kubeObjects.replicaSet, "replicasets", kubeObjects.replicaSet, "specify names of replica sets(replicaset_name.namespace)")
 	cmd.Flags().StringSliceVar(&kubeObjects.daemons, "daemons", kubeObjects.daemons, "specify names of daemon sets(daemons.namespace)")
 	cmd.Flags().StringSliceVar(&kubeObjects.storageClasses, "storage", kubeObjects.storageClasses, "specify names of storageclasses")
 
@@ -98,7 +93,7 @@ func readLocalFiles(dirName string) []string {
 }
 
 func (kubeObjects objects) makeYamlListFromKube() []string {
-	kubeClient, err := NewKubeClient(kubeObjects.kubeContext)
+	kubeClient, err := NewKubeClient()
 	if err != nil {
 		log.Fatal(err)
 	}
