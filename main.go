@@ -1,12 +1,13 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	// "fmt"
 
 	"github.com/appscode/chartify/pkg/cmd"
 	v "github.com/appscode/go/version"
 	"github.com/spf13/cobra"
+	"github.com/spf13/cobra/doc"
+	"fmt"
 )
 
 var (
@@ -49,10 +50,12 @@ func main() {
 	}
 	rootCmd.AddCommand(cmd.NewCmdCreate())
 	rootCmd.AddCommand(v.NewCmdVersion())
-	err := rootCmd.Execute()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	os.Exit(0)
+	//err := rootCmd.Execute()
+	//if err != nil {
+	//	fmt.Println(err)
+	//	os.Exit(1)
+	//}
+	//os.Exit(0)
+
+	doc.GenMarkdownTree(rootCmd, "/tmp/chart")
 }
