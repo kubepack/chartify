@@ -1,13 +1,14 @@
 package pkg
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 
-	"github.com/ghodss/yaml"
+	ylib "github.com/ghodss/yaml"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	kapi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/unversioned"
@@ -16,6 +17,7 @@ import (
 	kext "k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/apis/storage"
 	"k8s.io/kubernetes/pkg/types"
+	"k8s.io/kubernetes/pkg/util/yaml"
 )
 
 type Generator struct {
@@ -47,21 +49,25 @@ func (g Generator) Create() (string, error) {
 	}
 	valueFile := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
-	var resourceType unversioned.TypeMeta
 	templateLocation := filepath.Join(cdir, TemplatesDir)
 	err = os.MkdirAll(templateLocation, 0755)
-	template := ""
-	for _, yamlData := range g.YamlFiles {
-		err = yaml.Unmarshal([]byte(yamlData), &resourceType)
+	for _, kubeObj := range g.YamlFiles {
+		kubeJson, err := yaml.ToJSON([]byte(kubeObj))
 		if err != nil {
 			log.Fatal(err)
 		}
-		template = ""
+
+		var objMeta unversioned.TypeMeta
+		err = json.Unmarshal(kubeJson, &objMeta)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		values := valueFileGenerator{}
-		templateName := ""
-		if resourceType.Kind == "Pod" {
+		var template, templateName string
+		if objMeta.Kind == "Pod" {
 			pod := kapi.Pod{}
-			err = yaml.Unmarshal([]byte(yamlData), &pod)
+			err = json.Unmarshal(kubeJson, &pod)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -73,9 +79,9 @@ func (g Generator) Create() (string, error) {
 			template, values = podTemplate(pod)
 			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
-		} else if resourceType.Kind == "ReplicationController" {
+		} else if objMeta.Kind == "ReplicationController" {
 			rc := kapi.ReplicationController{}
-			err = yaml.Unmarshal([]byte(yamlData), &rc)
+			err = json.Unmarshal(kubeJson, &rc)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -87,9 +93,9 @@ func (g Generator) Create() (string, error) {
 			template, values = replicationControllerTemplate(rc)
 			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
-		} else if resourceType.Kind == "Deployment" {
+		} else if objMeta.Kind == "Deployment" {
 			deployment := kext.Deployment{}
-			err = yaml.Unmarshal([]byte(yamlData), &deployment)
+			err = json.Unmarshal(kubeJson, &deployment)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -104,9 +110,9 @@ func (g Generator) Create() (string, error) {
 			template, values = deploymentTemplate(deployment)
 			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
-		} else if resourceType.Kind == "Job" {
+		} else if objMeta.Kind == "Job" {
 			job := batch.Job{}
-			err = yaml.Unmarshal([]byte(yamlData), &job)
+			err = json.Unmarshal(kubeJson, &job)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -118,9 +124,9 @@ func (g Generator) Create() (string, error) {
 			template, values = jobTemplate(job)
 			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
-		} else if resourceType.Kind == "DaemonSet" {
+		} else if objMeta.Kind == "DaemonSet" {
 			daemonset := kext.DaemonSet{}
-			err = yaml.Unmarshal([]byte(yamlData), &daemonset)
+			err = json.Unmarshal(kubeJson, &daemonset)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -132,9 +138,9 @@ func (g Generator) Create() (string, error) {
 			template, values = daemonsetTemplate(daemonset)
 			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
-		} else if resourceType.Kind == "ReplicaSet" {
+		} else if objMeta.Kind == "ReplicaSet" {
 			rcSet := kext.ReplicaSet{}
-			err = yaml.Unmarshal([]byte(yamlData), &rcSet)
+			err = json.Unmarshal(kubeJson, &rcSet)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -146,9 +152,9 @@ func (g Generator) Create() (string, error) {
 			template, values = replicaSetTemplate(rcSet)
 			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
-		} else if resourceType.Kind == "StatefulSet" {
+		} else if objMeta.Kind == "StatefulSet" {
 			statefulset := apps.StatefulSet{}
-			err := yaml.Unmarshal([]byte(yamlData), &statefulset)
+			err := json.Unmarshal(kubeJson, &statefulset)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -160,9 +166,9 @@ func (g Generator) Create() (string, error) {
 			template, values = statefulsetTemplate(statefulset)
 			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
-		} else if resourceType.Kind == "Service" {
+		} else if objMeta.Kind == "Service" {
 			service := kapi.Service{}
-			err := yaml.Unmarshal([]byte(yamlData), &service)
+			err := json.Unmarshal(kubeJson, &service)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -173,9 +179,9 @@ func (g Generator) Create() (string, error) {
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			valueFile[removeCharactersFromName(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
-		} else if resourceType.Kind == "ConfigMap" {
+		} else if objMeta.Kind == "ConfigMap" {
 			configMap := kapi.ConfigMap{}
-			err := yaml.Unmarshal([]byte(yamlData), &configMap)
+			err := json.Unmarshal(kubeJson, &configMap)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -185,9 +191,9 @@ func (g Generator) Create() (string, error) {
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = configMapTemplate(configMap)
 			valueFile[removeCharactersFromName(name)] = values.value
-		} else if resourceType.Kind == "Secret" {
+		} else if objMeta.Kind == "Secret" {
 			secret := kapi.Secret{}
-			err := yaml.Unmarshal([]byte(yamlData), &secret)
+			err := json.Unmarshal(kubeJson, &secret)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -197,9 +203,9 @@ func (g Generator) Create() (string, error) {
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = secretTemplate(secret)
 			valueFile[removeCharactersFromName(name)] = values.value
-		} else if resourceType.Kind == "PersistentVolumeClaim" {
+		} else if objMeta.Kind == "PersistentVolumeClaim" {
 			pvc := kapi.PersistentVolumeClaim{}
-			err := yaml.Unmarshal([]byte(yamlData), &pvc)
+			err := json.Unmarshal(kubeJson, &pvc)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -210,9 +216,9 @@ func (g Generator) Create() (string, error) {
 			template, values = pvcTemplate(pvc)
 			persistence = addPersistence(persistence, values.persistence)
 			//valueFile[removeCharactersFromName(name)] = values.value
-		} else if resourceType.Kind == "PersistentVolume" {
+		} else if objMeta.Kind == "PersistentVolume" {
 			pv := kapi.PersistentVolume{}
-			err := yaml.Unmarshal([]byte(yamlData), &pv)
+			err := json.Unmarshal(kubeJson, &pv)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -222,9 +228,9 @@ func (g Generator) Create() (string, error) {
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = pvTemplate(pv)
 			valueFile[removeCharactersFromName(name)] = values.value
-		} else if resourceType.Kind == "StorageClass" {
+		} else if objMeta.Kind == "StorageClass" {
 			storageClass := storage.StorageClass{}
-			err := yaml.Unmarshal([]byte(yamlData), &storageClass)
+			err := json.Unmarshal(kubeJson, &storageClass)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -245,7 +251,7 @@ func (g Generator) Create() (string, error) {
 	if len(persistence) != 0 {
 		valueFile["persistence"] = persistence
 	}
-	valueFileData, err := yaml.Marshal(valueFile)
+	valueFileData, err := ylib.Marshal(valueFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -276,11 +282,13 @@ func cleanUpObjectMeta(m *kapi.ObjectMeta) {
 func cleanUpPodSpec(p *kapi.PodSpec) {
 	p.TerminationGracePeriodSeconds = nil
 	p.DNSPolicy = kapi.DNSPolicy("")
-	for _, c := range p.Containers {
+	for i, c := range p.Containers {
 		c.TerminationMessagePath = ""
+		p.Containers[i] = c
 	}
-	for _, c := range p.InitContainers {
+	for i, c := range p.InitContainers {
 		c.TerminationMessagePath = ""
+		p.InitContainers[i] = c
 	}
 }
 
@@ -296,7 +304,7 @@ func podTemplate(pod kapi.Pod) (string, valueFileGenerator) {
 		volumes, persistence = generateTemplateForVolume(pod.Spec.Volumes, key, value)
 		pod.Spec.Volumes = nil
 	}
-	tempPodByte, err := yaml.Marshal(pod)
+	tempPodByte, err := ylib.Marshal(pod)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -326,7 +334,7 @@ func replicationControllerTemplate(rc kapi.ReplicationController) (string, value
 		value["persistence"] = true
 		rc.Spec.Template.Spec.Volumes = nil
 	}
-	tempRcByte, err := yaml.Marshal(rc)
+	tempRcByte, err := ylib.Marshal(rc)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -353,7 +361,7 @@ func replicaSetTemplate(replicaSet kext.ReplicaSet) (string, valueFileGenerator)
 		replicaSet.Spec.Template.Spec.Volumes = nil
 	}
 	template := ""
-	tempRcSetByte, err := yaml.Marshal(replicaSet)
+	tempRcSetByte, err := ylib.Marshal(replicaSet)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -387,7 +395,7 @@ func deploymentTemplate(deployment kext.Deployment) (string, valueFileGenerator)
 		value["DeploymentStrategy"] = deployment.Spec.Strategy.Type //TODO test
 	}
 	template := ""
-	tempDeploymentByte, err := yaml.Marshal(deployment)
+	tempDeploymentByte, err := ylib.Marshal(deployment)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -414,9 +422,9 @@ func daemonsetTemplate(daemonset kext.DaemonSet) (string, valueFileGenerator) {
 		daemonset.Spec.Template.Spec.Volumes = nil
 	}
 	template := ""
-	//valueData, err := yaml.Marshal(value)
+	//valueData, err := ylib.Marshal(value)
 
-	tempDaemonSetByte, err := yaml.Marshal(daemonset)
+	tempDaemonSetByte, err := ylib.Marshal(daemonset)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -447,7 +455,7 @@ func statefulsetTemplate(statefulset apps.StatefulSet) (string, valueFileGenerat
 		volumes, persistence = generateTemplateForVolume(statefulset.Spec.Template.Spec.Volumes, key, value)
 		statefulset.Spec.Template.Spec.Volumes = nil
 	}
-	tempStatefulSetByte, err := yaml.Marshal(statefulset)
+	tempStatefulSetByte, err := ylib.Marshal(statefulset)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -473,7 +481,7 @@ func jobTemplate(job batch.Job) (string, valueFileGenerator) {
 		value["persistence"] = true
 		job.Spec.Template.Spec.Volumes = nil
 	}
-	tempJobByte, err := yaml.Marshal(job)
+	tempJobByte, err := ylib.Marshal(job)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -493,7 +501,7 @@ func serviceTemplate(svc kapi.Service) (string, valueFileGenerator) {
 	key := removeCharactersFromName(svc.ObjectMeta.Name)
 	svc.ObjectMeta = generateObjectMetaTemplate(svc.ObjectMeta, key, value, svc.ObjectMeta.Name)
 	svc.Spec = generateServiceSpecTemplate(svc.Spec, key, value)
-	svcData, err := yaml.Marshal(svc)
+	svcData, err := ylib.Marshal(svc)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -506,7 +514,7 @@ func configMapTemplate(configMap kapi.ConfigMap) (string, valueFileGenerator) {
 	key := removeCharactersFromName(configMap.ObjectMeta.Name)
 	configMap.ObjectMeta = generateObjectMetaTemplate(configMap.ObjectMeta, key, value, configMap.ObjectMeta.Name)
 	configMap.ObjectMeta.Name = key // not using release name befor configmap
-	configMapData, err := yaml.Marshal(configMap)
+	configMapData, err := ylib.Marshal(configMap)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -535,7 +543,7 @@ func secretTemplate(secret kapi.Secret) (string, valueFileGenerator) {
 	secret.Data = nil
 	value["Type"] = secret.Type
 	secret.Type = kapi.SecretType(fmt.Sprintf("{{.Values.%s.Type}}", key))
-	secretDataByte, err := yaml.Marshal(secret)
+	secretDataByte, err := ylib.Marshal(secret)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -552,7 +560,7 @@ func pvcTemplate(pvc kapi.PersistentVolumeClaim) (string, valueFileGenerator) {
 	key := removeCharactersFromName(pvc.ObjectMeta.Name)
 	pvc.ObjectMeta = generateObjectMetaTemplate(pvc.ObjectMeta, key, tempValue, pvc.ObjectMeta.Name)
 	pvc.Spec = generatePersistentVolumeClaimSpec(pvc.Spec, key, tempValue)
-	pvcData, err := yaml.Marshal(pvc)
+	pvcData, err := ylib.Marshal(pvc)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -568,7 +576,7 @@ func pvTemplate(pv kapi.PersistentVolume) (string, valueFileGenerator) {
 	key := removeCharactersFromName(pv.ObjectMeta.Name)
 	pv.ObjectMeta = generateObjectMetaTemplate(pv.ObjectMeta, key, value, pv.Name)
 	pv.Spec = generatePersistentVolumeSpec(pv.Spec, key, value)
-	pvData, err := yaml.Marshal(pv)
+	pvData, err := ylib.Marshal(pv)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -583,7 +591,7 @@ func storageClassTemplate(storageClass storage.StorageClass) (string, valueFileG
 	value["Provisioner"] = storageClass.Provisioner
 	storageClass.Provisioner = fmt.Sprintf("{{.Values.%s.Provisioner}}", key)
 	storageClass.Parameters = mapToValueMaker(storageClass.Parameters, value, key)
-	storageData, err := yaml.Marshal(storageClass)
+	storageData, err := ylib.Marshal(storageClass)
 	if err != nil {
 		log.Fatal(err)
 	}
