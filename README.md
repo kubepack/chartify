@@ -34,3 +34,10 @@ chartify create NAME [FLAGS]
       --statefulsets stringSlice     Specify names of statefulsets(statefulset_name.namespace)
       --storageclasses stringSlice   Specify names of storageclasses
 ```
+
+### Issues
+Please file an issue if you think you've found a bug. Be sure to describe
+ * How can it be reproduced?
+ * What did you expect?
+ * What actually occurred?
+ * Kubernetes version, Helm version, Go version, platform, etc. if possibly relevant.
