@@ -1,5 +1,30 @@
 #!/usr/bin/env python
 
+
+# http://stackoverflow.com/a/14050282
+def check_antipackage():
+    from sys import version_info
+    sys_version = version_info[:2]
+    found = True
+    if sys_version < (3, 0):
+        # 'python 2'
+        from pkgutil import find_loader
+        found = find_loader('antipackage') is not None
+    elif sys_version <= (3, 3):
+        # 'python <= 3.3'
+        from importlib import find_loader
+        found = find_loader('antipackage') is not None
+    else:
+        # 'python >= 3.4'
+        from importlib import util
+        found = util.find_spec('antipackage') is not None
+    if not found:
+        print('Install missing package "antipackage"')
+        print('Example: pip install git+https://github.com/ellisonbg/antipackage.git#egg=antipackage')
+        from sys import exit
+        exit(1)
+check_antipackage()
+
 # ref: https://github.com/ellisonbg/antipackage
 import antipackage
 from github.appscode.libbuild import libbuild
@@ -48,7 +73,7 @@ def die(status):
 def version():
     # json.dump(BUILD_METADATA, sys.stdout, sort_keys=True, indent=2)
     for k in sorted(BUILD_METADATA):
-        print k + '=' + BUILD_METADATA[k]
+        print(k + '=' + BUILD_METADATA[k])
 
 
 def fmt():
@@ -68,8 +93,8 @@ def vet():
 def build_cmd(name):
     cfg = libbuild.BIN_MATRIX[name]
     if cfg['type'] == 'go':
-        if 'distro' in cfg.keys():
-            for goos, archs in cfg['distro'].iteritems():
+        if 'distro' in cfg:
+            for goos, archs in cfg['distro'].items():
                 for goarch in archs:
                     libbuild.go_build(name, goos, goarch, main='main.go')
         else:
@@ -78,37 +103,36 @@ def build_cmd(name):
 
 def build_cmds():
     fmt()
-    for name in libbuild.BIN_MATRIX.keys():
+    for name in libbuild.BIN_MATRIX:
         build_cmd(name)
 
 
-def build_all():
+def build():
     build_cmds()
 
 
-def push_all():
-    dist = libbuild.REPO_ROOT + '/dist'
-    for name in os.listdir(dist):
-        d = dist + '/' + name
-        if os.path.isdir(d):
-            push(d)
+def push(name=None):
+    if name:
+        bindir = libbuild.REPO_ROOT + '/dist/' + name
+        push_bin(bindir)
+    else:
+        dist = libbuild.REPO_ROOT + '/dist'
+        for name in os.listdir(dist):
+            d = dist + '/' + name
+            if os.path.isdir(d):
+                push_bin(d)
 
 
-def push_cmd(name):
-    bindir = libbuild.REPO_ROOT + '/dist/' + name
-    push(bindir)
-
-
-def push(bindir):
+def push_bin(bindir):
     call('rm -f *.md5', cwd=bindir)
     call('rm -f *.sha1', cwd=bindir)
     for f in os.listdir(bindir):
         if os.path.isfile(bindir + '/' + f):
-            libbuidl.upload_to_cloud(bindir, f, BUILD_METADATA['version'])
+            libbuild.upload_to_cloud(bindir, f, BUILD_METADATA['version'])
 
 
 def update_registry():
-    libbuiold.update_registry(BUILD_METADATA['version'])
+    libbuild.update_registry(BUILD_METADATA['version'])
 
 
 def install():
