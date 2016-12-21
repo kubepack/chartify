@@ -78,8 +78,7 @@ def version():
 
 def fmt():
     die(call('goimports -w pkg main.go'))
-    call('gofmt -w main.go')
-    call('go fmt ./pkg/...')
+    call('gofmt -s -w main.go pkg')
 
 
 def lint():
