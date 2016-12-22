@@ -101,7 +101,6 @@ def build_cmd(name):
 
 
 def build_cmds():
-    fmt()
     for name in libbuild.BIN_MATRIX:
         build_cmd(name)
 
