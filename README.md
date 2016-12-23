@@ -9,7 +9,7 @@ go install github.com/appscode/chartify
 ## Usage
 You can provide Kubernetes objects as YAML/JSON files in a directory using --kube-dir flag. Or, you can read Kubernetes
 objects from a cluster. Chartify will read objects from the current context of your local kubeconfig file.
- 
+
 You can use this as a standalone cli or a Helm plugin.
 
 ```
@@ -22,6 +22,7 @@ chartify create NAME [FLAGS]
       --chart-dir string             Specify the location where charts will be created (default "charts")
       --configmaps stringSlice       Specify the names of configmaps(configmap.namespace) to include them in chart
       --daemons stringSlice          Specify names of daemon sets(daemons.namespace)
+      --deployments stringSlice      Specify names of deployments (deployments.namespace)
       --jobs stringSlice             Specify names of jobs
       --kube-dir string              Specify the directory of the yaml files for Kubernetes objects
       --pods stringSlice             Specify the names of pods (podname.namespace) to include them in chart

@@ -16,17 +16,18 @@ import (
 )
 
 type KubeObjects struct {
-	Pods                   []string
-	ReplicationControllers []string
 	ConfigMaps             []string
-	Services               []string
-	Secrets                []string
+	Deployments            []string
+	Daemons                []string
+	Jobs                   []string
 	PersistentVolume       []string
 	PersistentVolumeClaim  []string
-	Statefulsets           []string
-	Jobs                   []string
-	Daemons                []string
+	Pods                   []string
 	ReplicaSet             []string
+	ReplicationControllers []string
+	Secrets                []string
+	Services               []string
+	Statefulsets           []string
 	StorageClasses         []string
 }
 
@@ -90,6 +91,10 @@ func (ko KubeObjects) readKubernetesObjects(kubeClient clientset.Interface) []st
 	if len(ko.Daemons) != 0 {
 		daemonFiles := ko.getDaemonsYamlList(kubeClient)
 		yamlFiles = appendSlice(yamlFiles, daemonFiles)
+	}
+	if len(ko.Deployments) != 0 {
+		deploymentsFiles := ko.getDeploymentsYamlList(kubeClient)
+		yamlFiles = appendSlice(yamlFiles, deploymentsFiles)
 	}
 	if len(ko.StorageClasses) != 0 {
 		storageClassFiles := ko.getStorageClassYamlList(kubeClient)
@@ -349,6 +354,32 @@ func (ko KubeObjects) getDaemonsYamlList(kubeClient clientset.Interface) []strin
 
 	}
 	return daemonFiles
+}
+
+func (ko KubeObjects) getDeploymentsYamlList(kubeClient clientset.Interface) []string {
+	var files []string
+	for _, v := range ko.Deployments {
+		objectName, namespace := splitNamespace(v)
+		deployment, err := kubeClient.Extensions().Deployments(namespace).Get(objectName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		ref, err := api.GetReference(deployment)
+		if deployment.Kind == "" {
+			deployment.Kind = ref.Kind
+		}
+		if deployment.APIVersion == "" {
+			deployment.APIVersion = makeAPIVersion(deployment.GetSelfLink())
+		}
+		deployment.Status = extensions.DeploymentStatus{}
+		dataByte, err := yaml.Marshal(deployment)
+		if err != nil {
+			log.Fatal(err)
+		}
+		files = append(files, string(dataByte))
+
+	}
+	return files
 }
 
 func (ko KubeObjects) getStorageClassYamlList(kubeClient clientset.Interface) []string {
