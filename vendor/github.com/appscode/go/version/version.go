@@ -1,4 +1,4 @@
-package cmd
+package version
 
 import (
 	"fmt"
@@ -43,7 +43,7 @@ var Version version
 func NewCmdVersion() *cobra.Command {
 	versionCmd := &cobra.Command{
 		Use:   "version",
-		Short: "Print chartify version information",
+		Short: "Prints binary version number.",
 		Run: func(cmd *cobra.Command, args []string) {
 			Version.Print()
 		},

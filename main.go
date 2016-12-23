@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/appscode/chartify/pkg/cmd"
+	v "github.com/appscode/go/version"
 	"github.com/spf13/cobra"
 )
 
@@ -24,18 +25,18 @@ var (
 )
 
 func init() {
-	cmd.Version.Version = Version
-	cmd.Version.VersionStrategy = VersionStrategy
-	cmd.Version.Os = Os
-	cmd.Version.Arch = Arch
-	cmd.Version.CommitHash = CommitHash
-	cmd.Version.GitBranch = GitBranch
-	cmd.Version.GitTag = GitTag
-	cmd.Version.CommitTimestamp = CommitTimestamp
-	cmd.Version.BuildTimestamp = BuildTimestamp
-	cmd.Version.BuildHost = BuildHost
-	cmd.Version.BuildHostOs = BuildHostOs
-	cmd.Version.BuildHostArch = BuildHostArch
+	v.Version.Version = Version
+	v.Version.VersionStrategy = VersionStrategy
+	v.Version.Os = Os
+	v.Version.Arch = Arch
+	v.Version.CommitHash = CommitHash
+	v.Version.GitBranch = GitBranch
+	v.Version.GitTag = GitTag
+	v.Version.CommitTimestamp = CommitTimestamp
+	v.Version.BuildTimestamp = BuildTimestamp
+	v.Version.BuildHost = BuildHost
+	v.Version.BuildHostOs = BuildHostOs
+	v.Version.BuildHostArch = BuildHostArch
 }
 
 func main() {
@@ -47,7 +48,7 @@ func main() {
 		},
 	}
 	rootCmd.AddCommand(cmd.NewCmdCreate())
-	rootCmd.AddCommand(cmd.NewCmdVersion())
+	rootCmd.AddCommand(v.NewCmdVersion())
 	err := rootCmd.Execute()
 	if err != nil {
 		fmt.Println(err)

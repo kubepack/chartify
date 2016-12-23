@@ -1,5 +1,6 @@
 package: github.com/appscode/chartify
 import:
+- package: github.com/appscode/go
 - package: github.com/ghodss/yaml
 - package: github.com/mitchellh/go-homedir
 - package: github.com/spf13/cobra
