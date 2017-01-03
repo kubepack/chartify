@@ -21,7 +21,7 @@ type KubeObjects struct {
 	Daemons                []string
 	Jobs                   []string
 	PersistentVolumes      []string
-	PersistentVolumeClaim  []string
+	PersistentVolumeClaims []string
 	Pods                   []string
 	ReplicaSets            []string
 	ReplicationControllers []string
@@ -73,7 +73,7 @@ func (ko KubeObjects) readKubernetesObjects(kubeClient clientset.Interface) []st
 	if len(ko.PersistentVolumes) != 0 {
 		yamlFiles = appendSlice(yamlFiles, ko.getPersistentVolumes(kubeClient))
 	}
-	if len(ko.PersistentVolumeClaim) != 0 {
+	if len(ko.PersistentVolumeClaims) != 0 {
 		yamlFiles = appendSlice(yamlFiles, ko.getPersistentVolumeClaims(kubeClient))
 	}
 	if len(ko.Jobs) != 0 { //TODO sauman
@@ -277,7 +277,7 @@ func (ko KubeObjects) getPersistentVolumes(kubeClient clientset.Interface) []str
 
 func (ko KubeObjects) getPersistentVolumeClaims(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
-	for _, v := range ko.PersistentVolumeClaim {
+	for _, v := range ko.PersistentVolumeClaims {
 		objectName, namespace := splitNamespace(v)
 		pvc, err := kubeClient.Core().PersistentVolumeClaims(namespace).Get(objectName)
 		if err != nil {
