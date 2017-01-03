@@ -1,5 +1,7 @@
 package pkg
 
+import "fmt"
+
 const (
 	// ChartfileName is the default Chart file name.
 	ChartfileName = "Chart.yaml"
@@ -32,4 +34,22 @@ We truncate at 24 chars because some Kubernetes name fields are limited to this 
 type valueFileGenerator struct {
 	value       map[string]interface{}
 	persistence map[string]interface{}
+}
+
+func (v *valueFileGenerator) MergeInto(dst map[string]interface{}, key string) {
+	existing, found := dst[key]
+	if !found {
+		dst[key] = v.value
+		return
+	}
+	if m, ok := existing.(map[string]interface{}); ok {
+		for k1, v1 := range v.value {
+			m[k1] = v1
+		}
+		dst[key] = m
+	} else {
+		fmt.Println("Overwriting string value with map.")
+		dst[key] = v.value
+		return
+	}
 }
