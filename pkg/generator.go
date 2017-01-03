@@ -77,7 +77,7 @@ func (g Generator) Create() (string, error) {
 			name := pod.Name
 			templateName = filepath.Join(templateLocation, name+".pod.yaml")
 			template, values = podTemplate(pod)
-			valueFile[generateSafeKey(name)] = values.value
+			values.MergeInto(valueFile, generateSafeKey(name))
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "ReplicationController" {
 			rc := kapi.ReplicationController{}
@@ -91,7 +91,7 @@ func (g Generator) Create() (string, error) {
 			name := rc.Name
 			templateName = filepath.Join(templateLocation, name+".rc.yaml")
 			template, values = replicationControllerTemplate(rc)
-			valueFile[generateSafeKey(name)] = values.value
+			values.MergeInto(valueFile, generateSafeKey(name))
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "Deployment" {
 			deployment := kext.Deployment{}
@@ -109,7 +109,7 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			template, values = deploymentTemplate(deployment)
-			valueFile[generateSafeKey(name)] = values.value
+			values.MergeInto(valueFile, generateSafeKey(name))
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "Job" {
 			job := batch.Job{}
@@ -123,7 +123,7 @@ func (g Generator) Create() (string, error) {
 			name := job.Name
 			templateName = filepath.Join(templateLocation, name+".job.yaml")
 			template, values = jobTemplate(job)
-			valueFile[generateSafeKey(name)] = values.value
+			values.MergeInto(valueFile, generateSafeKey(name))
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "DaemonSet" {
 			daemonset := kext.DaemonSet{}
@@ -137,7 +137,7 @@ func (g Generator) Create() (string, error) {
 			name := daemonset.Name
 			templateName = filepath.Join(templateLocation, name+".daemonset.yaml")
 			template, values = daemonsetTemplate(daemonset)
-			valueFile[generateSafeKey(name)] = values.value
+			values.MergeInto(valueFile, generateSafeKey(name))
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "ReplicaSet" {
 			rcSet := kext.ReplicaSet{}
@@ -155,7 +155,7 @@ func (g Generator) Create() (string, error) {
 			name := rcSet.Name
 			templateName = filepath.Join(templateLocation, name+".rs.yaml")
 			template, values = replicaSetTemplate(rcSet)
-			valueFile[generateSafeKey(name)] = values.value
+			values.MergeInto(valueFile, generateSafeKey(name))
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "StatefulSet" {
 			statefulset := apps.StatefulSet{}
@@ -169,7 +169,7 @@ func (g Generator) Create() (string, error) {
 			name := statefulset.Name
 			templateName = filepath.Join(templateLocation, name+".statefulset.yaml")
 			template, values = statefulsetTemplate(statefulset)
-			valueFile[generateSafeKey(name)] = values.value
+			values.MergeInto(valueFile, generateSafeKey(name))
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "Service" {
 			service := kapi.Service{}
@@ -182,7 +182,7 @@ func (g Generator) Create() (string, error) {
 			template, values = serviceTemplate(service)
 			name := service.Name
 			templateName = filepath.Join(templateLocation, name+".svc.yaml")
-			valueFile[generateSafeKey(name)] = values.value
+			values.MergeInto(valueFile, generateSafeKey(name))
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "ConfigMap" {
 			configMap := kapi.ConfigMap{}
@@ -195,7 +195,7 @@ func (g Generator) Create() (string, error) {
 			name := configMap.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = configMapTemplate(configMap)
-			valueFile[generateSafeKey(name)] = values.value
+			values.MergeInto(valueFile, generateSafeKey(name))
 		} else if objMeta.Kind == "Secret" {
 			secret := kapi.Secret{}
 			err := json.Unmarshal(kubeJson, &secret)
@@ -207,7 +207,7 @@ func (g Generator) Create() (string, error) {
 			name := secret.Name
 			templateName = filepath.Join(templateLocation, name+".secret.yaml")
 			template, values = secretTemplate(secret)
-			valueFile[generateSafeKey(name)] = values.value
+			values.MergeInto(valueFile, generateSafeKey(name))
 		} else if objMeta.Kind == "PersistentVolumeClaim" {
 			pvc := kapi.PersistentVolumeClaim{}
 			err := json.Unmarshal(kubeJson, &pvc)
@@ -232,7 +232,7 @@ func (g Generator) Create() (string, error) {
 			name := pv.Name
 			templateName = filepath.Join(templateLocation, name+".pv.yaml")
 			template, values = pvTemplate(pv)
-			valueFile[generateSafeKey(name)] = values.value
+			values.MergeInto(valueFile, generateSafeKey(name))
 		} else if objMeta.Kind == "StorageClass" {
 			storageClass := storage.StorageClass{}
 			err := json.Unmarshal(kubeJson, &storageClass)
@@ -244,7 +244,7 @@ func (g Generator) Create() (string, error) {
 			name := storageClass.Name
 			templateName = filepath.Join(templateLocation, name+".storage.yaml")
 			template, values = storageClassTemplate(storageClass)
-			valueFile[generateSafeKey(name)] = values.value
+			values.MergeInto(valueFile, generateSafeKey(name))
 		} else {
 			fmt.Printf("%v is not supported. Please add manually. Consider filing bug here: https://github.com/appscode/chartify/issues", objMeta.Kind)
 		}
