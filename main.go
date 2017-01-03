@@ -2,12 +2,10 @@ package main
 
 import (
 	// "fmt"
-
 	"github.com/appscode/chartify/pkg/cmd"
 	v "github.com/appscode/go/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
-	"fmt"
 )
 
 var (

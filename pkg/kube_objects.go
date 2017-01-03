@@ -89,7 +89,7 @@ func (ko KubeObjects) readKubernetesObjects(kubeClient clientset.Interface) []st
 		yamlFiles = appendSlice(yamlFiles, ko.getReplicaSets(kubeClient))
 	}
 	if len(ko.Deployments) != 0 {
-		deploymentsFiles := ko.getDeploymentsYamlList(kubeClient)
+		deploymentsFiles := ko.getDeployments(kubeClient)
 		yamlFiles = appendSlice(yamlFiles, deploymentsFiles)
 	}
 	if len(ko.StorageClasses) != 0 {
