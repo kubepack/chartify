@@ -4,7 +4,6 @@ data:
   special.type: charm
 kind: ConfigMap
 metadata:
-  creationTimestamp: null
   labels:
     chart: '{{.Chart.Name}}-{{.Chart.Version}}'
     heritage: '{{.Release.Service}}'

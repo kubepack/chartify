@@ -2,30 +2,57 @@ package main
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/appscode/chartify/pkg"
 	"os"
+
+	"github.com/appscode/chartify/pkg/cmd"
+	v "github.com/appscode/go/version"
+	"github.com/spf13/cobra"
 )
 
+var (
+	Version         string
+	VersionStrategy string
+	Os              string
+	Arch            string
+	CommitHash      string
+	GitBranch       string
+	GitTag          string
+	CommitTimestamp string
+	BuildTimestamp  string
+	BuildHost       string
+	BuildHostOs     string
+	BuildHostArch   string
+)
+
+func init() {
+	v.Version.Version = Version
+	v.Version.VersionStrategy = VersionStrategy
+	v.Version.Os = Os
+	v.Version.Arch = Arch
+	v.Version.CommitHash = CommitHash
+	v.Version.GitBranch = GitBranch
+	v.Version.GitTag = GitTag
+	v.Version.CommitTimestamp = CommitTimestamp
+	v.Version.BuildTimestamp = BuildTimestamp
+	v.Version.BuildHost = BuildHost
+	v.Version.BuildHostOs = BuildHostOs
+	v.Version.BuildHostArch = BuildHostArch
+}
+
 func main() {
-	cmd := NewCmd()
-	err := cmd.Execute()
+	rootCmd := &cobra.Command{
+		Use:   "chartify [command]",
+		Short: `Generate Helm Charts from Kubernetes api objects`,
+		Run: func(c *cobra.Command, args []string) {
+			c.Help()
+		},
+	}
+	rootCmd.AddCommand(cmd.NewCmdCreate())
+	rootCmd.AddCommand(v.NewCmdVersion())
+	err := rootCmd.Execute()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 	os.Exit(0)
-}
-
-func NewCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "chartify",
-		Example: `chartify create`,
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Help()
-		},
-	}
-	cmd.AddCommand(pkg.CreateChart())
-	return cmd
-
 }

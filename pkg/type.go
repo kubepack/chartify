@@ -1,5 +1,7 @@
 package pkg
 
+import "fmt"
+
 const (
 	// ChartfileName is the default Chart file name.
 	ChartfileName = "Chart.yaml"
@@ -7,16 +9,6 @@ const (
 	ValuesfileName = "values.yaml"
 	// TemplatesDir is the relative directory name for templates.
 	TemplatesDir = "templates"
-	// ChartsDir is the relative directory name for charts dependencies.
-	ChartsDir = "charts"
-	// IgnorefileName is the name of the Helm ignore file.
-	IgnorefileName = ".helmignore"
-	// DeploymentName is the name of the example deployment file.
-	DeploymentName = "deployment.yaml"
-	// ServiceName is the name of the example service file.
-	ServiceName = "service.yaml"
-	// NotesName is the name of the example NOTES.txt file.
-	NotesName = "NOTES.txt"
 	// HelpersName is the name of the example NOTES.txt file.
 	HelpersName = "_helpers.tpl"
 )
@@ -44,31 +36,20 @@ type valueFileGenerator struct {
 	persistence map[string]interface{}
 }
 
-var (
-	dir       string
-	location  string
-	chartName string
-)
-
-type objects struct {
-	kubeContext            string
-	pods                   []string
-	replicationControllers []string
-	configMaps             []string
-	services               []string
-	secrets                []string
-	persistentVolume       []string
-	persistentVolumeClaim  []string
-	petsets                []string
-	jobs                   []string
-	daemons                []string
-	replicaSet             []string
-	storageClasses         []string
-}
-
-type chartInfo struct {
-	dir       string
-	location  string
-	chartName string
-	yamlFiles []string
+func (v *valueFileGenerator) MergeInto(dst map[string]interface{}, key string) {
+	existing, found := dst[key]
+	if !found {
+		dst[key] = v.value
+		return
+	}
+	if m, ok := existing.(map[string]interface{}); ok {
+		for k1, v1 := range v.value {
+			m[k1] = v1
+		}
+		dst[key] = m
+	} else {
+		fmt.Println("Overwriting string value with map.")
+		dst[key] = v.value
+		return
+	}
 }

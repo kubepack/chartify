@@ -1,75 +1,108 @@
 package pkg
 
 import (
+	"fmt"
+	"log"
+	"reflect"
+	"strings"
+
 	"github.com/ghodss/yaml"
-	kubeapi "k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/apps"
 	"k8s.io/kubernetes/pkg/apis/batch"
 	"k8s.io/kubernetes/pkg/apis/extensions"
-	client "k8s.io/kubernetes/pkg/client/unversioned"
-	"log"
-	"strings"
+	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
+	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
 )
 
-func (kubeObjects objects) readKubernetesObjects(kubeClient *client.Client) []string {
-	var yamlFiles []string
-	if len(kubeObjects.pods) != 0 {
-		podFiles := kubeObjects.getPodsYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, podFiles)
-	}
-	if len(kubeObjects.services) != 0 {
-		serviceFiles := kubeObjects.getServicesYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, serviceFiles)
-	}
-	if len(kubeObjects.replicationControllers) != 0 {
-		rcFiles := kubeObjects.getReplicationControllerYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, rcFiles)
-	}
-	if len(kubeObjects.secrets) != 0 {
-		secretFiles := kubeObjects.getSecretsYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, secretFiles)
-	}
-	if len(kubeObjects.configMaps) != 0 {
-		configMapsFiles := kubeObjects.getConfigMapsYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, configMapsFiles)
-	}
-	if len(kubeObjects.petsets) != 0 {
-		petSetsFiles := kubeObjects.getPetSetsYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, petSetsFiles)
-	}
-	if len(kubeObjects.persistentVolume) != 0 {
-		pvFiles := kubeObjects.getPersistentVolumeYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, pvFiles)
-	}
-	if len(kubeObjects.persistentVolumeClaim) != 0 {
-		pvcFiles := kubeObjects.getPersistentVolumeClaimYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, pvcFiles)
-	}
-	if len(kubeObjects.jobs) != 0 { //TODO sauman
-		jobFiles := kubeObjects.getJobsyamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, jobFiles)
-	}
-	if len(kubeObjects.daemons) != 0 {
-		daemonFiles := kubeObjects.getDaemonsYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, daemonFiles)
-	}
-	if len(kubeObjects.storageClasses) != 0 {
-		storageClassFiles := kubeObjects.getStorageClassYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, storageClassFiles)
-	}
+type KubeObjects struct {
+	ConfigMaps             []string
+	Deployments            []string
+	Daemons                []string
+	Jobs                   []string
+	PersistentVolumes      []string
+	PersistentVolumeClaims []string
+	Pods                   []string
+	ReplicaSets            []string
+	ReplicationControllers []string
+	Secrets                []string
+	Services               []string
+	StatefulSets           []string
+	StorageClasses         []string
+}
 
+func (ko KubeObjects) Extract() []string {
+	kubeClient, err := newKubeClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+	yamlFiles := ko.readKubernetesObjects(kubeClient)
 	return yamlFiles
 }
 
-func (kubeObjects objects) getPodsYamlList(kubeClient *client.Client) []string {
+func (ko KubeObjects) CheckFlags() bool {
+	v := reflect.ValueOf(ko)
+	for i := 0; i < v.NumField(); i++ {
+		if v.Field(i).Len() > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (ko KubeObjects) readKubernetesObjects(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
-	for _, v := range kubeObjects.pods {
-		objectName, namespace := splitnamespace(v)
-		pod, err := kubeClient.Pods(namespace).Get(objectName)
+	if len(ko.Pods) != 0 {
+		yamlFiles = appendSlice(yamlFiles, ko.getPods(kubeClient))
+	}
+	if len(ko.Services) != 0 {
+		yamlFiles = appendSlice(yamlFiles, ko.getServices(kubeClient))
+	}
+	if len(ko.ReplicationControllers) != 0 {
+		yamlFiles = appendSlice(yamlFiles, ko.getReplicationControllers(kubeClient))
+	}
+	if len(ko.Secrets) != 0 {
+		yamlFiles = appendSlice(yamlFiles, ko.getSecrets(kubeClient))
+	}
+	if len(ko.ConfigMaps) != 0 {
+		yamlFiles = appendSlice(yamlFiles, ko.getConfigMaps(kubeClient))
+	}
+	if len(ko.StatefulSets) != 0 {
+		yamlFiles = appendSlice(yamlFiles, ko.getStatefulSets(kubeClient))
+	}
+	if len(ko.PersistentVolumes) != 0 {
+		yamlFiles = appendSlice(yamlFiles, ko.getPersistentVolumes(kubeClient))
+	}
+	if len(ko.PersistentVolumeClaims) != 0 {
+		yamlFiles = appendSlice(yamlFiles, ko.getPersistentVolumeClaims(kubeClient))
+	}
+	if len(ko.Jobs) != 0 { //TODO sauman
+		yamlFiles = appendSlice(yamlFiles, ko.getJobs(kubeClient))
+	}
+	if len(ko.Daemons) != 0 {
+		yamlFiles = appendSlice(yamlFiles, ko.getDaemons(kubeClient))
+	}
+	if len(ko.Deployments) != 0 {
+		yamlFiles = appendSlice(yamlFiles, ko.getDeployments(kubeClient))
+	}
+	if len(ko.ReplicaSets) != 0 {
+		yamlFiles = appendSlice(yamlFiles, ko.getReplicaSets(kubeClient))
+	}
+	if len(ko.StorageClasses) != 0 {
+		yamlFiles = appendSlice(yamlFiles, ko.getStorageClasses(kubeClient))
+	}
+	return yamlFiles
+}
+
+func (ko KubeObjects) getPods(kubeClient clientset.Interface) []string {
+	var yamlFiles []string
+	for _, v := range ko.Pods {
+		objectName, namespace := splitNamespace(v)
+		pod, err := kubeClient.Core().Pods(namespace).Get(objectName)
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := kubeapi.GetReference(pod)
+		ref, err := api.GetReference(pod)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -79,7 +112,7 @@ func (kubeObjects objects) getPodsYamlList(kubeClient *client.Client) []string {
 		if pod.APIVersion == "" {
 			pod.APIVersion = ref.APIVersion
 		}
-		pod.Status = kubeapi.PodStatus{}
+		pod.Status = api.PodStatus{}
 		dataByte, err := yaml.Marshal(pod)
 		yamlFiles = append(yamlFiles, string(dataByte))
 		if err != nil {
@@ -89,15 +122,15 @@ func (kubeObjects objects) getPodsYamlList(kubeClient *client.Client) []string {
 	return yamlFiles
 }
 
-func (kubeObjects objects) getReplicationControllerYamlList(kubeClient *client.Client) []string {
+func (ko KubeObjects) getReplicationControllers(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
-	for _, v := range kubeObjects.replicationControllers {
-		objectName, namespace := splitnamespace(v)
-		rc, err := kubeClient.ReplicationControllers(namespace).Get(objectName)
+	for _, v := range ko.ReplicationControllers {
+		objectName, namespace := splitNamespace(v)
+		rc, err := kubeClient.Core().ReplicationControllers(namespace).Get(objectName)
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := kubeapi.GetReference(rc)
+		ref, err := api.GetReference(rc)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -107,7 +140,7 @@ func (kubeObjects objects) getReplicationControllerYamlList(kubeClient *client.C
 		if rc.APIVersion == "" {
 			rc.APIVersion = ref.APIVersion
 		}
-		rc.Status = kubeapi.ReplicationControllerStatus{}
+		rc.Status = api.ReplicationControllerStatus{}
 		dataByte, err := yaml.Marshal(rc)
 		yamlFiles = append(yamlFiles, string(dataByte))
 		if err != nil {
@@ -117,22 +150,22 @@ func (kubeObjects objects) getReplicationControllerYamlList(kubeClient *client.C
 	return yamlFiles
 }
 
-func (kubeObjects objects) getServicesYamlList(kubeClient *client.Client) []string {
+func (ko KubeObjects) getServices(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
-	for _, v := range kubeObjects.services {
-		objectName, namespace := splitnamespace(v)
-		service, err := kubeClient.Services(namespace).Get(objectName)
+	for _, v := range ko.Services {
+		objectName, namespace := splitNamespace(v)
+		service, err := kubeClient.Core().Services(namespace).Get(objectName)
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := kubeapi.GetReference(service)
+		ref, err := api.GetReference(service)
 		if service.Kind == "" {
 			service.Kind = ref.Kind
 		}
 		if service.APIVersion == "" {
 			service.APIVersion = ref.APIVersion
 		}
-		service.Status = kubeapi.ServiceStatus{}
+		service.Status = api.ServiceStatus{}
 		dataByte, err := yaml.Marshal(service)
 		yamlFiles = append(yamlFiles, string(dataByte))
 		if err != nil {
@@ -142,15 +175,15 @@ func (kubeObjects objects) getServicesYamlList(kubeClient *client.Client) []stri
 	return yamlFiles
 }
 
-func (kubeObjects objects) getSecretsYamlList(kubeClient *client.Client) []string {
+func (ko KubeObjects) getSecrets(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
-	for _, v := range kubeObjects.secrets {
-		objectName, namespace := splitnamespace(v)
-		secret, err := kubeClient.Secrets(namespace).Get(objectName)
+	for _, v := range ko.Secrets {
+		objectName, namespace := splitNamespace(v)
+		secret, err := kubeClient.Core().Secrets(namespace).Get(objectName)
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := kubeapi.GetReference(secret)
+		ref, err := api.GetReference(secret)
 		if secret.Kind == "" {
 			secret.Kind = ref.Kind
 		}
@@ -166,15 +199,15 @@ func (kubeObjects objects) getSecretsYamlList(kubeClient *client.Client) []strin
 	return yamlFiles
 }
 
-func (kubeObjects objects) getConfigMapsYamlList(kubeClient *client.Client) []string {
+func (ko KubeObjects) getConfigMaps(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
-	for _, v := range kubeObjects.configMaps {
-		objectName, namespace := splitnamespace(v)
-		configmap, err := kubeClient.ConfigMaps(namespace).Get(objectName)
+	for _, v := range ko.ConfigMaps {
+		objectName, namespace := splitNamespace(v)
+		configmap, err := kubeClient.Core().ConfigMaps(namespace).Get(objectName)
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := kubeapi.GetReference(configmap)
+		ref, err := api.GetReference(configmap)
 		if configmap.Kind == "" {
 			configmap.Kind = ref.Kind
 		}
@@ -190,23 +223,23 @@ func (kubeObjects objects) getConfigMapsYamlList(kubeClient *client.Client) []st
 	return yamlFiles
 }
 
-func (kubeObjects objects) getPetSetsYamlList(kubeClient *client.Client) []string {
+func (ko KubeObjects) getStatefulSets(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
-	for _, v := range kubeObjects.petsets {
-		objectName, namespace := splitnamespace(v)
-		petset, err := kubeClient.PetSets(namespace).Get(objectName)
+	for _, v := range ko.StatefulSets {
+		objectName, namespace := splitNamespace(v)
+		statefulset, err := kubeClient.Apps().StatefulSets(namespace).Get(objectName)
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := kubeapi.GetReference(petset)
-		if petset.Kind == "" {
-			petset.Kind = ref.Kind
+		ref, err := api.GetReference(statefulset)
+		if statefulset.Kind == "" {
+			statefulset.Kind = ref.Kind
 		}
-		if len(petset.APIVersion) == 0 {
-			petset.APIVersion = makeApiVersion(petset.GetSelfLink())
+		if len(statefulset.APIVersion) == 0 {
+			statefulset.APIVersion = makeAPIVersion(statefulset.GetSelfLink())
 		}
-		petset.Status = apps.PetSetStatus{}
-		dataByte, err := yaml.Marshal(petset)
+		statefulset.Status = apps.StatefulSetStatus{}
+		dataByte, err := yaml.Marshal(statefulset)
 		yamlFiles = append(yamlFiles, string(dataByte))
 		if err != nil {
 			log.Fatal(err)
@@ -215,14 +248,14 @@ func (kubeObjects objects) getPetSetsYamlList(kubeClient *client.Client) []strin
 	return yamlFiles
 }
 
-func (kubeObjects objects) getPersistentVolumeYamlList(kubeClient *client.Client) []string {
+func (ko KubeObjects) getPersistentVolumes(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
-	for _, v := range kubeObjects.persistentVolume {
-		pv, err := kubeClient.PersistentVolumes().Get(v)
+	for _, v := range ko.PersistentVolumes {
+		pv, err := kubeClient.Core().PersistentVolumes().Get(v)
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := kubeapi.GetReference(pv)
+		ref, err := api.GetReference(pv)
 		if pv.Kind == "" {
 			pv.Kind = ref.Kind
 		}
@@ -238,15 +271,15 @@ func (kubeObjects objects) getPersistentVolumeYamlList(kubeClient *client.Client
 	return yamlFiles
 }
 
-func (kubeObjects objects) getPersistentVolumeClaimYamlList(kubeClient *client.Client) []string {
+func (ko KubeObjects) getPersistentVolumeClaims(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
-	for _, v := range kubeObjects.persistentVolumeClaim {
-		objectName, namespace := splitnamespace(v)
-		pvc, err := kubeClient.PersistentVolumeClaims(namespace).Get(objectName)
+	for _, v := range ko.PersistentVolumeClaims {
+		objectName, namespace := splitNamespace(v)
+		pvc, err := kubeClient.Core().PersistentVolumeClaims(namespace).Get(objectName)
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := kubeapi.GetReference(pvc)
+		ref, err := api.GetReference(pvc)
 		if pvc.Kind == "" {
 			pvc.Kind = ref.Kind
 		}
@@ -262,20 +295,20 @@ func (kubeObjects objects) getPersistentVolumeClaimYamlList(kubeClient *client.C
 	return yamlFiles
 }
 
-func (kubeObjects objects) getJobsyamlList(kubeClient *client.Client) []string {
+func (ko KubeObjects) getJobs(kubeClient clientset.Interface) []string {
 	var jobFiles []string
-	for _, v := range kubeObjects.jobs {
-		objectName, namespace := splitnamespace(v)
-		job, err := kubeClient.Extensions().Jobs(namespace).Get(objectName)
+	for _, v := range ko.Jobs {
+		objectName, namespace := splitNamespace(v)
+		job, err := kubeClient.Batch().Jobs(namespace).Get(objectName)
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := kubeapi.GetReference(job)
+		ref, err := api.GetReference(job)
 		if job.Kind == "" {
 			job.Kind = ref.Kind
 		}
 		if job.APIVersion == "" {
-			job.APIVersion = makeApiVersion(job.GetSelfLink())
+			job.APIVersion = makeAPIVersion(job.GetSelfLink())
 		}
 		job.Status = batch.JobStatus{}
 		dataByte, err := yaml.Marshal(job)
@@ -287,20 +320,20 @@ func (kubeObjects objects) getJobsyamlList(kubeClient *client.Client) []string {
 	return jobFiles
 }
 
-func (kubeObjects objects) getDaemonsYamlList(kubeClient *client.Client) []string {
+func (ko KubeObjects) getDaemons(kubeClient clientset.Interface) []string {
 	var daemonFiles []string
-	for _, v := range kubeObjects.daemons {
-		objectName, namespace := splitnamespace(v)
-		daemon, err := kubeClient.ExtensionsClient.DaemonSets(namespace).Get(objectName)
+	for _, v := range ko.Daemons {
+		objectName, namespace := splitNamespace(v)
+		daemon, err := kubeClient.Extensions().DaemonSets(namespace).Get(objectName)
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := kubeapi.GetReference(daemon)
+		ref, err := api.GetReference(daemon)
 		if daemon.Kind == "" {
 			daemon.Kind = ref.Kind
 		}
 		if daemon.APIVersion == "" {
-			daemon.APIVersion = makeApiVersion(daemon.GetSelfLink())
+			daemon.APIVersion = makeAPIVersion(daemon.GetSelfLink())
 		}
 		daemon.Status = extensions.DaemonSetStatus{}
 		dataByte, err := yaml.Marshal(daemon)
@@ -313,20 +346,74 @@ func (kubeObjects objects) getDaemonsYamlList(kubeClient *client.Client) []strin
 	return daemonFiles
 }
 
-func (kubeObjects objects) getStorageClassYamlList(kubeClient *client.Client) []string {
-	var storageFiles []string
-	for _, v := range kubeObjects.storageClasses {
-		//objectsName, namespace := splitnamespace(v)
-		storageClass, err := kubeClient.StorageClasses().Get(v)
+func (ko KubeObjects) getDeployments(kubeClient clientset.Interface) []string {
+	var files []string
+	for _, v := range ko.Deployments {
+		objectName, namespace := splitNamespace(v)
+		deployment, err := kubeClient.Extensions().Deployments(namespace).Get(objectName)
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := kubeapi.GetReference(storageClass)
+		ref, err := api.GetReference(deployment)
+		if deployment.Kind == "" {
+			deployment.Kind = ref.Kind
+		}
+		if deployment.APIVersion == "" {
+			deployment.APIVersion = makeAPIVersion(deployment.GetSelfLink())
+		}
+		deployment.Status = extensions.DeploymentStatus{}
+		dataByte, err := yaml.Marshal(deployment)
+		if err != nil {
+			log.Fatal(err)
+		}
+		files = append(files, string(dataByte))
+
+	}
+	return files
+}
+
+func (ko KubeObjects) getReplicaSets(kubeClient clientset.Interface) []string {
+	var yamlFiles []string
+	for _, v := range ko.ReplicaSets {
+		objectName, namespace := splitNamespace(v)
+		rc, err := kubeClient.Extensions().ReplicaSets(namespace).Get(objectName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		ref, err := api.GetReference(rc)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if rc.Kind == "" {
+			rc.Kind = ref.Kind
+		}
+		if rc.APIVersion == "" {
+			rc.APIVersion = ref.APIVersion
+		}
+		rc.Status = extensions.ReplicaSetStatus{}
+		dataByte, err := yaml.Marshal(rc)
+		yamlFiles = append(yamlFiles, string(dataByte))
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	return yamlFiles
+}
+
+func (ko KubeObjects) getStorageClasses(kubeClient clientset.Interface) []string {
+	var storageFiles []string
+	for _, v := range ko.StorageClasses {
+		//objectsName, namespace := splitnamespace(v)
+		storageClass, err := kubeClient.Storage().StorageClasses().Get(v)
+		if err != nil {
+			log.Fatal(err)
+		}
+		ref, err := api.GetReference(storageClass)
 		if storageClass.Kind == "" {
 			storageClass.Kind = ref.Kind
 		}
 		if storageClass.APIVersion == "" {
-			storageClass.APIVersion = makeApiVersion(storageClass.GetSelfLink())
+			storageClass.APIVersion = makeAPIVersion(storageClass.GetSelfLink())
 		}
 		dataByte, err := yaml.Marshal(storageClass)
 		if err != nil {
@@ -340,6 +427,17 @@ func (kubeObjects objects) getStorageClassYamlList(kubeClient *client.Client) []
 
 }
 
+func newKubeClient() (clientset.Interface, error) {
+	rules := clientcmd.NewDefaultClientConfigLoadingRules()
+	rules.DefaultClientConfig = &clientcmd.DefaultClientConfig
+	overrides := &clientcmd.ConfigOverrides{ClusterDefaults: clientcmd.ClusterDefaults}
+	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
+	if err != nil {
+		return nil, fmt.Errorf("Could not get kubernetes config: %s", err)
+	}
+	return clientset.NewForConfig(config)
+}
+
 func appendSlice(mainSlice []string, subSlice []string) []string {
 	for _, v := range subSlice {
 		mainSlice = append(mainSlice, v)
@@ -347,7 +445,7 @@ func appendSlice(mainSlice []string, subSlice []string) []string {
 	return mainSlice
 }
 
-func splitnamespace(s string) (string, string) {
+func splitNamespace(s string) (string, string) {
 	str := strings.Split(s, ".")
 	if len(str) == 2 {
 		return str[0], str[1]
@@ -359,12 +457,11 @@ func splitnamespace(s string) (string, string) {
 	return "", ""
 }
 
-func makeApiVersion(selfLink string) string {
+func makeAPIVersion(selfLink string) string {
 	str := strings.Split(selfLink, "/")
 	if len(str) > 2 {
 		return (str[2] + "/" + str[3])
-	} else {
-		log.Fatal("api version not found")
 	}
+	log.Fatal("api version not found")
 	return ""
 }

@@ -1,0 +1,19 @@
+configmap:
+  Namespace: default
+  special.how: very
+  special.type: charm
+job:
+  pi:
+    image: perl
+    imageTag: latest
+persistence:
+  pvc:
+    AccessMode: ReadWriteOnce
+    enabled: true
+pv:
+  AccessMode: ReadWriteOnce
+  ReclaimPolicy: Recycle
+rc:
+  nginx:
+    image: nginx
+    imageTag: latest

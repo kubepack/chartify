@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  labels:
+    chart: '{{.Chart.Name}}-{{.Chart.Version}}'
+    heritage: '{{.Release.Service}}'
+    release: '{{.Release.Name}}'
+  name: '{{ template "fullname" . }}-rc'
+spec:
+  replicas: 3
+  selector:
+    app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+      name: nginx
+    spec:
+      containers:
+      - image: '{{.Values.rc.nginx.image}}:{{.Values.rc.nginx.imageTag}}'
+        name: nginx
+        ports:
+        - containerPort: 80
