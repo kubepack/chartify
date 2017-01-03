@@ -52,7 +52,7 @@ func NewCmdCreate() *cobra.Command {
 	cmd.Flags().StringSliceVar(&ko.PersistentVolume, "pvs", ko.PersistentVolume, "Specify names of persistent volumes")
 	cmd.Flags().StringSliceVar(&ko.PersistentVolumeClaim, "pvcs", ko.PersistentVolumeClaim, "Specify names of persistent volume claim")
 	cmd.Flags().StringSliceVar(&ko.Pods, "pods", ko.Pods, "Specify the names of pods (podname.namespace) to include them in chart")
-	cmd.Flags().StringSliceVar(&ko.ReplicaSet, "replicasets", ko.ReplicaSet, "Specify names of replica sets(replicaset_name.namespace)")
+	cmd.Flags().StringSliceVar(&ko.ReplicaSets, "replicasets", ko.ReplicaSets, "Specify names of replica sets(replicaset_name.namespace)")
 	cmd.Flags().StringSliceVar(&ko.ReplicationControllers, "rcs", ko.ReplicationControllers, "Specify the names of replication cotrollers (rcname.namespace) to include them in chart")
 	cmd.Flags().StringSliceVar(&ko.Secrets, "secrets", ko.ConfigMaps, "Specify the names of secrets(secret_name.namespace) to include them in chart")
 	cmd.Flags().StringSliceVar(&ko.Services, "services", ko.Services, "Specify the names of services to include them in chart")

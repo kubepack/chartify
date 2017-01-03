@@ -146,6 +146,10 @@ func (g Generator) Create() (string, error) {
 			}
 			cleanUpObjectMeta(&rcSet.ObjectMeta)
 			cleanUpPodSpec(&rcSet.Spec.Template.Spec)
+			cleanUpDecorators(rcSet.ObjectMeta.Annotations)
+			cleanUpDecorators(rcSet.ObjectMeta.Labels)
+			cleanUpDecorators(rcSet.Spec.Selector.MatchLabels)
+			cleanUpDecorators(rcSet.Spec.Template.ObjectMeta.Labels)
 
 			name := rcSet.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
@@ -277,6 +281,13 @@ func cleanUpObjectMeta(m *kapi.ObjectMeta) {
 	m.Generation = 0
 	m.CreationTimestamp = t
 	m.DeletionTimestamp = nil
+}
+
+func cleanUpDecorators(m map[string]string) {
+	delete(m, "deployment.kubernetes.io/desired-replicas")
+	delete(m, "deployment.kubernetes.io/max-replicas")
+	delete(m, "deployment.kubernetes.io/revision")
+	delete(m, "pod-template-hash")
 }
 
 func cleanUpPodSpec(p *kapi.PodSpec) {

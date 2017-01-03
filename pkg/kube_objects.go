@@ -23,7 +23,7 @@ type KubeObjects struct {
 	PersistentVolume       []string
 	PersistentVolumeClaim  []string
 	Pods                   []string
-	ReplicaSet             []string
+	ReplicaSets            []string
 	ReplicationControllers []string
 	Secrets                []string
 	Services               []string
@@ -95,6 +95,10 @@ func (ko KubeObjects) readKubernetesObjects(kubeClient clientset.Interface) []st
 	if len(ko.Deployments) != 0 {
 		deploymentsFiles := ko.getDeploymentsYamlList(kubeClient)
 		yamlFiles = appendSlice(yamlFiles, deploymentsFiles)
+	}
+	if len(ko.ReplicaSets) != 0 {
+		rsFiles := ko.getReplicaSetYamlList(kubeClient)
+		yamlFiles = appendSlice(yamlFiles, rsFiles)
 	}
 	if len(ko.StorageClasses) != 0 {
 		storageClassFiles := ko.getStorageClassYamlList(kubeClient)
@@ -380,6 +384,34 @@ func (ko KubeObjects) getDeploymentsYamlList(kubeClient clientset.Interface) []s
 
 	}
 	return files
+}
+
+func (ko KubeObjects) getReplicaSetYamlList(kubeClient clientset.Interface) []string {
+	var yamlFiles []string
+	for _, v := range ko.ReplicaSets {
+		objectName, namespace := splitNamespace(v)
+		rc, err := kubeClient.Extensions().ReplicaSets(namespace).Get(objectName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		ref, err := api.GetReference(rc)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if rc.Kind == "" {
+			rc.Kind = ref.Kind
+		}
+		if rc.APIVersion == "" {
+			rc.APIVersion = ref.APIVersion
+		}
+		rc.Status = extensions.ReplicaSetStatus{}
+		dataByte, err := yaml.Marshal(rc)
+		yamlFiles = append(yamlFiles, string(dataByte))
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	return yamlFiles
 }
 
 func (ko KubeObjects) getStorageClassYamlList(kubeClient clientset.Interface) []string {
