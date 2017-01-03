@@ -20,20 +20,20 @@ chartify create NAME [FLAGS]
 
 ```
       --chart-dir string             Specify the location where charts will be created (default "charts")
-      --configmaps stringSlice       Specify the names of configmaps(configmap.namespace) to include them in chart
-      --daemons stringSlice          Specify names of daemon sets(daemons.namespace)
-      --deployments stringSlice      Specify names of deployments (deployments.namespace)
-      --jobs stringSlice             Specify names of jobs
+      --configmaps stringSlice       Specify the names of configmaps(configmap.namespace) to include in chart
+      --daemons stringSlice          Specify the names of daemons(daemon.namespace) to include in chart
+      --deployments stringSlice      Specify the names of deployments(deployments.namespace) to include in chart
+      --jobs stringSlice             Specify the names of jobs(job.namespace) to include in chart
       --kube-dir string              Specify the directory of the yaml files for Kubernetes objects
-      --pods stringSlice             Specify the names of pods (podname.namespace) to include them in chart
-      --pvcs stringSlice             Specify names of persistent volume claim
-      --pvs stringSlice              Specify names of persistent volumes
-      --rcs stringSlice              Specify the names of replication cotrollers (rcname.namespace) to include them in chart
-      --replicasets stringSlice      Specify names of replica sets(replicaset_name.namespace)
-      --secrets stringSlice          Specify the names of secrets(secret_name.namespace) to include them in chart
-      --services stringSlice         Specify the names of services to include them in chart
-      --statefulsets stringSlice     Specify names of statefulsets(statefulset_name.namespace)
-      --storageclasses stringSlice   Specify names of storageclasses
+      --pods stringSlice             Specify the names of pods(pod.namespace) to include in chart
+      --pvcs stringSlice             Specify the names of persistent volume claims(pvc.namespace) to include in chart
+      --pvs stringSlice              Specify the names of persistent volumes(pv.namespace) to include in chart
+      --rcs stringSlice              Specify the names of replication cotrollers(rc.namespace) to include in chart
+      --replicasets stringSlice      Specify the names of replica sets(rs.namespace) to include in chart
+      --secrets stringSlice          Specify the names of secrets(secret.namespace) to include in chart
+      --services stringSlice         Specify the names of services(service.namespace) to include in chart
+      --statefulsets stringSlice     Specify the names of statefulsets(statefulset.namespace) to include in chart
+      --storageclasses stringSlice   Specify the names of storageclasses(storageclass.namespace) to include in chart
 ```
 
 ### Issues
