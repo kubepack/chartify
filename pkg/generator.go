@@ -29,7 +29,7 @@ type Generator struct {
 func (g Generator) Create() (string, error) {
 	chartfile := chartMetaData(g.ChartName)
 	imageTag := "" //TODO
-	fmt.Println("Creating Custom Chart...")
+	fmt.Println("Creating chart...")
 	cdir := filepath.Join(g.Location, chartfile.Name)
 	fi, err := os.Stat(cdir)
 	if err == nil && !fi.IsDir() {

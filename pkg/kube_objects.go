@@ -20,14 +20,14 @@ type KubeObjects struct {
 	Deployments            []string
 	Daemons                []string
 	Jobs                   []string
-	PersistentVolume       []string
+	PersistentVolumes      []string
 	PersistentVolumeClaim  []string
 	Pods                   []string
 	ReplicaSets            []string
 	ReplicationControllers []string
 	Secrets                []string
 	Services               []string
-	Statefulsets           []string
+	StatefulSets           []string
 	StorageClasses         []string
 }
 
@@ -53,62 +53,48 @@ func (ko KubeObjects) CheckFlags() bool {
 func (ko KubeObjects) readKubernetesObjects(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
 	if len(ko.Pods) != 0 {
-		podFiles := ko.getPodsYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, podFiles)
+		yamlFiles = appendSlice(yamlFiles, ko.getPods(kubeClient))
 	}
 	if len(ko.Services) != 0 {
-		serviceFiles := ko.getServicesYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, serviceFiles)
+		yamlFiles = appendSlice(yamlFiles, ko.getServices(kubeClient))
 	}
 	if len(ko.ReplicationControllers) != 0 {
-		rcFiles := ko.getReplicationControllerYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, rcFiles)
+		yamlFiles = appendSlice(yamlFiles, ko.getReplicationControllers(kubeClient))
 	}
 	if len(ko.Secrets) != 0 {
-		secretFiles := ko.getSecretsYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, secretFiles)
+		yamlFiles = appendSlice(yamlFiles, ko.getSecrets(kubeClient))
 	}
 	if len(ko.ConfigMaps) != 0 {
-		configMapsFiles := ko.getConfigMapsYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, configMapsFiles)
+		yamlFiles = appendSlice(yamlFiles, ko.getConfigMaps(kubeClient))
 	}
-	if len(ko.Statefulsets) != 0 {
-		statefulSetFiles := ko.getStatefulSetsYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, statefulSetFiles)
+	if len(ko.StatefulSets) != 0 {
+		yamlFiles = appendSlice(yamlFiles, ko.getStatefulSets(kubeClient))
 	}
-	if len(ko.PersistentVolume) != 0 {
-		pvFiles := ko.getPersistentVolumeYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, pvFiles)
+	if len(ko.PersistentVolumes) != 0 {
+		yamlFiles = appendSlice(yamlFiles, ko.getPersistentVolumes(kubeClient))
 	}
 	if len(ko.PersistentVolumeClaim) != 0 {
-		pvcFiles := ko.getPersistentVolumeClaimYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, pvcFiles)
+		yamlFiles = appendSlice(yamlFiles, ko.getPersistentVolumeClaims(kubeClient))
 	}
 	if len(ko.Jobs) != 0 { //TODO sauman
-		jobFiles := ko.getJobsyamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, jobFiles)
+		yamlFiles = appendSlice(yamlFiles, ko.getJobs(kubeClient))
 	}
 	if len(ko.Daemons) != 0 {
-		daemonFiles := ko.getDaemonsYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, daemonFiles)
+		yamlFiles = appendSlice(yamlFiles, ko.getDaemons(kubeClient))
 	}
 	if len(ko.Deployments) != 0 {
-		deploymentsFiles := ko.getDeploymentsYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, deploymentsFiles)
+		yamlFiles = appendSlice(yamlFiles, ko.getDeployments(kubeClient))
 	}
 	if len(ko.ReplicaSets) != 0 {
-		rsFiles := ko.getReplicaSetYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, rsFiles)
+		yamlFiles = appendSlice(yamlFiles, ko.getReplicaSets(kubeClient))
 	}
 	if len(ko.StorageClasses) != 0 {
-		storageClassFiles := ko.getStorageClassYamlList(kubeClient)
-		yamlFiles = appendSlice(yamlFiles, storageClassFiles)
+		yamlFiles = appendSlice(yamlFiles, ko.getStorageClasses(kubeClient))
 	}
-
 	return yamlFiles
 }
 
-func (ko KubeObjects) getPodsYamlList(kubeClient clientset.Interface) []string {
+func (ko KubeObjects) getPods(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
 	for _, v := range ko.Pods {
 		objectName, namespace := splitNamespace(v)
@@ -136,7 +122,7 @@ func (ko KubeObjects) getPodsYamlList(kubeClient clientset.Interface) []string {
 	return yamlFiles
 }
 
-func (ko KubeObjects) getReplicationControllerYamlList(kubeClient clientset.Interface) []string {
+func (ko KubeObjects) getReplicationControllers(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
 	for _, v := range ko.ReplicationControllers {
 		objectName, namespace := splitNamespace(v)
@@ -164,7 +150,7 @@ func (ko KubeObjects) getReplicationControllerYamlList(kubeClient clientset.Inte
 	return yamlFiles
 }
 
-func (ko KubeObjects) getServicesYamlList(kubeClient clientset.Interface) []string {
+func (ko KubeObjects) getServices(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
 	for _, v := range ko.Services {
 		objectName, namespace := splitNamespace(v)
@@ -189,7 +175,7 @@ func (ko KubeObjects) getServicesYamlList(kubeClient clientset.Interface) []stri
 	return yamlFiles
 }
 
-func (ko KubeObjects) getSecretsYamlList(kubeClient clientset.Interface) []string {
+func (ko KubeObjects) getSecrets(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
 	for _, v := range ko.Secrets {
 		objectName, namespace := splitNamespace(v)
@@ -213,7 +199,7 @@ func (ko KubeObjects) getSecretsYamlList(kubeClient clientset.Interface) []strin
 	return yamlFiles
 }
 
-func (ko KubeObjects) getConfigMapsYamlList(kubeClient clientset.Interface) []string {
+func (ko KubeObjects) getConfigMaps(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
 	for _, v := range ko.ConfigMaps {
 		objectName, namespace := splitNamespace(v)
@@ -237,9 +223,9 @@ func (ko KubeObjects) getConfigMapsYamlList(kubeClient clientset.Interface) []st
 	return yamlFiles
 }
 
-func (ko KubeObjects) getStatefulSetsYamlList(kubeClient clientset.Interface) []string {
+func (ko KubeObjects) getStatefulSets(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
-	for _, v := range ko.Statefulsets {
+	for _, v := range ko.StatefulSets {
 		objectName, namespace := splitNamespace(v)
 		statefulset, err := kubeClient.Apps().StatefulSets(namespace).Get(objectName)
 		if err != nil {
@@ -262,9 +248,9 @@ func (ko KubeObjects) getStatefulSetsYamlList(kubeClient clientset.Interface) []
 	return yamlFiles
 }
 
-func (ko KubeObjects) getPersistentVolumeYamlList(kubeClient clientset.Interface) []string {
+func (ko KubeObjects) getPersistentVolumes(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
-	for _, v := range ko.PersistentVolume {
+	for _, v := range ko.PersistentVolumes {
 		pv, err := kubeClient.Core().PersistentVolumes().Get(v)
 		if err != nil {
 			log.Fatal(err)
@@ -285,7 +271,7 @@ func (ko KubeObjects) getPersistentVolumeYamlList(kubeClient clientset.Interface
 	return yamlFiles
 }
 
-func (ko KubeObjects) getPersistentVolumeClaimYamlList(kubeClient clientset.Interface) []string {
+func (ko KubeObjects) getPersistentVolumeClaims(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
 	for _, v := range ko.PersistentVolumeClaim {
 		objectName, namespace := splitNamespace(v)
@@ -309,7 +295,7 @@ func (ko KubeObjects) getPersistentVolumeClaimYamlList(kubeClient clientset.Inte
 	return yamlFiles
 }
 
-func (ko KubeObjects) getJobsyamlList(kubeClient clientset.Interface) []string {
+func (ko KubeObjects) getJobs(kubeClient clientset.Interface) []string {
 	var jobFiles []string
 	for _, v := range ko.Jobs {
 		objectName, namespace := splitNamespace(v)
@@ -334,7 +320,7 @@ func (ko KubeObjects) getJobsyamlList(kubeClient clientset.Interface) []string {
 	return jobFiles
 }
 
-func (ko KubeObjects) getDaemonsYamlList(kubeClient clientset.Interface) []string {
+func (ko KubeObjects) getDaemons(kubeClient clientset.Interface) []string {
 	var daemonFiles []string
 	for _, v := range ko.Daemons {
 		objectName, namespace := splitNamespace(v)
@@ -360,7 +346,7 @@ func (ko KubeObjects) getDaemonsYamlList(kubeClient clientset.Interface) []strin
 	return daemonFiles
 }
 
-func (ko KubeObjects) getDeploymentsYamlList(kubeClient clientset.Interface) []string {
+func (ko KubeObjects) getDeployments(kubeClient clientset.Interface) []string {
 	var files []string
 	for _, v := range ko.Deployments {
 		objectName, namespace := splitNamespace(v)
@@ -386,7 +372,7 @@ func (ko KubeObjects) getDeploymentsYamlList(kubeClient clientset.Interface) []s
 	return files
 }
 
-func (ko KubeObjects) getReplicaSetYamlList(kubeClient clientset.Interface) []string {
+func (ko KubeObjects) getReplicaSets(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
 	for _, v := range ko.ReplicaSets {
 		objectName, namespace := splitNamespace(v)
@@ -414,7 +400,7 @@ func (ko KubeObjects) getReplicaSetYamlList(kubeClient clientset.Interface) []st
 	return yamlFiles
 }
 
-func (ko KubeObjects) getStorageClassYamlList(kubeClient clientset.Interface) []string {
+func (ko KubeObjects) getStorageClasses(kubeClient clientset.Interface) []string {
 	var storageFiles []string
 	for _, v := range ko.StorageClasses {
 		//objectsName, namespace := splitnamespace(v)
