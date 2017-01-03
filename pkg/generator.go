@@ -75,7 +75,7 @@ func (g Generator) Create() (string, error) {
 			cleanUpPodSpec(&pod.Spec)
 
 			name := pod.Name
-			templateName = filepath.Join(templateLocation, name+".yaml")
+			templateName = filepath.Join(templateLocation, name+".pod.yaml")
 			template, values = podTemplate(pod)
 			valueFile[generateSafeKey(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
@@ -89,7 +89,7 @@ func (g Generator) Create() (string, error) {
 			cleanUpPodSpec(&rc.Spec.Template.Spec)
 
 			name := rc.Name
-			templateName = filepath.Join(templateLocation, name+".yaml")
+			templateName = filepath.Join(templateLocation, name+".rc.yaml")
 			template, values = replicationControllerTemplate(rc)
 			valueFile[generateSafeKey(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
@@ -104,7 +104,7 @@ func (g Generator) Create() (string, error) {
 			cleanUpDecorators(deployment.ObjectMeta.Annotations)
 
 			name := deployment.Name
-			templateName = filepath.Join(templateLocation, name+".yaml")
+			templateName = filepath.Join(templateLocation, name+".deployment.yaml")
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -121,7 +121,7 @@ func (g Generator) Create() (string, error) {
 			cleanUpPodSpec(&job.Spec.Template.Spec)
 
 			name := job.Name
-			templateName = filepath.Join(templateLocation, name+".yaml")
+			templateName = filepath.Join(templateLocation, name+".job.yaml")
 			template, values = jobTemplate(job)
 			valueFile[generateSafeKey(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
@@ -135,7 +135,7 @@ func (g Generator) Create() (string, error) {
 			cleanUpPodSpec(&daemonset.Spec.Template.Spec)
 
 			name := daemonset.Name
-			templateName = filepath.Join(templateLocation, name+".yaml")
+			templateName = filepath.Join(templateLocation, name+".daemonset.yaml")
 			template, values = daemonsetTemplate(daemonset)
 			valueFile[generateSafeKey(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
@@ -153,7 +153,7 @@ func (g Generator) Create() (string, error) {
 			cleanUpDecorators(rcSet.Spec.Template.ObjectMeta.Labels)
 
 			name := rcSet.Name
-			templateName = filepath.Join(templateLocation, name+".yaml")
+			templateName = filepath.Join(templateLocation, name+".rs.yaml")
 			template, values = replicaSetTemplate(rcSet)
 			valueFile[generateSafeKey(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
@@ -167,7 +167,7 @@ func (g Generator) Create() (string, error) {
 			cleanUpPodSpec(&statefulset.Spec.Template.Spec)
 
 			name := statefulset.Name
-			templateName = filepath.Join(templateLocation, name+".yaml")
+			templateName = filepath.Join(templateLocation, name+".statefulset.yaml")
 			template, values = statefulsetTemplate(statefulset)
 			valueFile[generateSafeKey(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
@@ -181,7 +181,7 @@ func (g Generator) Create() (string, error) {
 
 			template, values = serviceTemplate(service)
 			name := service.Name
-			templateName = filepath.Join(templateLocation, name+".yaml")
+			templateName = filepath.Join(templateLocation, name+".svc.yaml")
 			valueFile[generateSafeKey(name)] = values.value
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "ConfigMap" {
@@ -205,7 +205,7 @@ func (g Generator) Create() (string, error) {
 			cleanUpObjectMeta(&secret.ObjectMeta)
 
 			name := secret.Name
-			templateName = filepath.Join(templateLocation, name+".yaml")
+			templateName = filepath.Join(templateLocation, name+".secret.yaml")
 			template, values = secretTemplate(secret)
 			valueFile[generateSafeKey(name)] = values.value
 		} else if objMeta.Kind == "PersistentVolumeClaim" {
@@ -217,7 +217,7 @@ func (g Generator) Create() (string, error) {
 			cleanUpObjectMeta(&pvc.ObjectMeta)
 
 			name := pvc.Name
-			templateName = filepath.Join(templateLocation, name+".yaml")
+			templateName = filepath.Join(templateLocation, name+".pvc.yaml")
 			template, values = pvcTemplate(pvc)
 			persistence = addPersistence(persistence, values.persistence)
 			//valueFile[removeCharactersFromName(name)] = values.value
@@ -230,7 +230,7 @@ func (g Generator) Create() (string, error) {
 			cleanUpObjectMeta(&pv.ObjectMeta)
 
 			name := pv.Name
-			templateName = filepath.Join(templateLocation, name+".yaml")
+			templateName = filepath.Join(templateLocation, name+".pv.yaml")
 			template, values = pvTemplate(pv)
 			valueFile[generateSafeKey(name)] = values.value
 		} else if objMeta.Kind == "StorageClass" {
@@ -242,11 +242,11 @@ func (g Generator) Create() (string, error) {
 			cleanUpObjectMeta(&storageClass.ObjectMeta)
 
 			name := storageClass.Name
-			templateName = filepath.Join(templateLocation, name+".yaml")
+			templateName = filepath.Join(templateLocation, name+".storage.yaml")
 			template, values = storageClassTemplate(storageClass)
 			valueFile[generateSafeKey(name)] = values.value
 		} else {
-			fmt.Printf("NOT IMPLEMENTED. ADD MAUALLY ")
+			fmt.Printf("%v is not supported. Please add manually. Consider filing bug here: https://github.com/appscode/chartify/issues", objMeta.Kind)
 		}
 		err = ioutil.WriteFile(templateName, []byte(template), 0644)
 		if err != nil {
