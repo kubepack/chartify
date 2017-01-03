@@ -101,6 +101,7 @@ func (g Generator) Create() (string, error) {
 			}
 			cleanUpObjectMeta(&deployment.ObjectMeta)
 			cleanUpPodSpec(&deployment.Spec.Template.Spec)
+			cleanUpDecorators(deployment.ObjectMeta.Annotations)
 
 			name := deployment.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
