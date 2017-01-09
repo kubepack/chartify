@@ -8,3 +8,10 @@ import:
   version: ^2.1.0
 - package: k8s.io/kubernetes
   version: ~1.5.0
+- package: gopkg.in/macaron.v1
+  version: v1.1.11
+  repo: https://github.com/go-macaron/macaron.git
+  vcs: git
+testImport:
+- package: github.com/stretchr/testify
+  version: v1.1.4

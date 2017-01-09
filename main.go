@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -47,7 +48,9 @@ func main() {
 			c.Help()
 		},
 	}
+	rootCmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
 	rootCmd.AddCommand(cmd.NewCmdCreate())
+	rootCmd.AddCommand(cmd.NewCmdServe())
 	rootCmd.AddCommand(v.NewCmdVersion())
 	err := rootCmd.Execute()
 	if err != nil {
