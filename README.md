@@ -5,7 +5,7 @@ Generate Helm Charts from Kubernetes api objects
 
 ## Installation
 ```go
-go install github.com/appscode/chartify
+go get -u github.com/appscode/chartify
 ```
 
 ## Usage
