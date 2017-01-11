@@ -4,17 +4,25 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	//"io"
 	"io/ioutil"
 	"log"
 	"net/http"
+	//"os"
 	"strings"
 	"time"
 
 	"github.com/appscode/chartify/pkg/repo"
+	"github.com/go-macaron/binding"
 	"github.com/go-macaron/toolbox"
 	"github.com/spf13/cobra"
 	macaron "gopkg.in/macaron.v1"
+	chartutil "k8s.io/helm/pkg/chartutil"
+	"k8s.io/helm/pkg/provenance"
+	helmrepo "k8s.io/helm/pkg/repo"
 )
+
+var s string
 
 func NewCmdServe() *cobra.Command {
 	var (
@@ -44,6 +52,10 @@ func NewCmdServe() *cobra.Command {
 			handler := repo.StaticBucket(repo.BucketOptions{PathPrefix: pathPrefix})
 			m.Get(pathPrefix+"/:container/", handler)
 			m.Get(pathPrefix+"/:container/*", handler)
+			m.Post("/container", binding.MultipartForm(ChartFile{}), func(chart ChartFile) string {
+				UnpackFileAndGetInfo(chart)
+				return "Chart Uploaded successfully"
+			})
 
 			log.Println("Listening on port", port)
 
@@ -99,4 +111,31 @@ func NewCmdServe() *cobra.Command {
 	cmd.Flags().StringVar(&keyFile, "keyFile", keyFile, "File containing server TLS private key")
 	cmd.Flags().StringVar(&pathPrefix, "path-prefix", "/charts", "Path prefix for chart repositories")
 	return cmd
+}
+
+func UnpackFileAndGetInfo(chart ChartFile) {
+	//TODO check if the chart is empty
+	file, err := chart.Data.Open()
+	if err != nil {
+		log.Println(err)
+	}
+	defer file.Close()
+	c, err := chartutil.LoadArchive(file)
+	if err != nil {
+		log.Println(err)
+	}
+	hash, err := provenance.Digest(file)
+	if err != nil {
+		log.Println(err)
+	}
+	index := helmrepo.NewIndexFile()
+	index.Add(c.Metadata, "test", "test-url", hash)
+	//TODO Load index from bucket
+	allIndex, err := helmrepo.LoadIndex([]byte(serverIndex))
+	if err != nil {
+		log.Println(err)
+	}
+	allIndex.Merge(index)
+	fmt.Println(allIndex)
+
 }

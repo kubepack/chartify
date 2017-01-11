@@ -120,7 +120,7 @@ func StaticBucket(bucketOpt ...BucketOptions) macaron.Handler {
 }
 
 func getGCEClient() (*gcloud_gcs.Service, error) {
-	cred, err := ioutil.ReadFile("/home/tamal/Downloads/tigerworks-kube-8b3c616bd068.json")
+	cred, err := ioutil.ReadFile("/home/sauman/Downloads/tigerworks-kube-29bde4e9ca11.json")
 	if err != nil {
 		return nil, err
 	}
