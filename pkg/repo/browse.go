@@ -53,7 +53,7 @@ func StaticBucket(bucketOpt ...BucketOptions) macaron.Handler {
 			return
 		}
 
-		gcsSvc, err := getGCEClient()
+		gcsSvc, err := GetGCEClient()
 		if err != nil {
 			http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 			return
@@ -103,6 +103,7 @@ func StaticBucket(bucketOpt ...BucketOptions) macaron.Handler {
 			}
 
 			// load file
+
 			res, err := gcsSvc.Objects.Get(bucket, bucketPath).Download()
 			if err != nil {
 				http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
@@ -119,12 +120,12 @@ func StaticBucket(bucketOpt ...BucketOptions) macaron.Handler {
 	}
 }
 
-func getGCEClient() (*gcloud_gcs.Service, error) {
-	cred, err := ioutil.ReadFile("/home/sauman/Downloads/tigerworks-kube-29bde4e9ca11.json")
+func GetGCEClient() (*gcloud_gcs.Service, error) {
+	cred, err := ioutil.ReadFile("/home/sauman/Downloads/tigerworks-kube-3803f9d609c7.json")
 	if err != nil {
 		return nil, err
 	}
-	conf, err := google.JWTConfigFromJSON(cred, gcloud_gcs.DevstorageReadOnlyScope)
+	conf, err := google.JWTConfigFromJSON(cred, gcloud_gcs.DevstorageReadWriteScope)
 	if err != nil {
 		return nil, err
 	}

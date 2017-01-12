@@ -4,19 +4,20 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	//"io"
 	"io/ioutil"
 	"log"
 	"net/http"
-	//"os"
 	"strings"
 	"time"
 
 	"github.com/appscode/chartify/pkg/repo"
 	"github.com/go-macaron/binding"
 	"github.com/go-macaron/toolbox"
+	//location "github.com/graymeta/stow/google"
 	"github.com/spf13/cobra"
+	bstore "google.golang.org/api/storage/v1"
 	macaron "gopkg.in/macaron.v1"
+	"k8s.io/heapster/Godeps/_workspace/src/gopkg.in/v2/yaml"
 	chartutil "k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/provenance"
 	helmrepo "k8s.io/helm/pkg/repo"
@@ -53,7 +54,7 @@ func NewCmdServe() *cobra.Command {
 			m.Get(pathPrefix+"/:container/", handler)
 			m.Get(pathPrefix+"/:container/*", handler)
 			m.Post("/container", binding.MultipartForm(ChartFile{}), func(chart ChartFile) string {
-				UnpackFileAndGetInfo(chart)
+				UploadChart(chart)
 				return "Chart Uploaded successfully"
 			})
 
@@ -113,7 +114,7 @@ func NewCmdServe() *cobra.Command {
 	return cmd
 }
 
-func UnpackFileAndGetInfo(chart ChartFile) {
+func UploadChart(chart ChartFile) {
 	//TODO check if the chart is empty
 	file, err := chart.Data.Open()
 	if err != nil {
@@ -130,12 +131,43 @@ func UnpackFileAndGetInfo(chart ChartFile) {
 	}
 	index := helmrepo.NewIndexFile()
 	index.Add(c.Metadata, "test", "test-url", hash)
-	//TODO Load index from bucket
-	allIndex, err := helmrepo.LoadIndex([]byte(serverIndex))
+	gceSvc, err := repo.GetGCEClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = gceSvc.Buckets.Get("chart-test").Do()
+	if err != nil {
+		log.Fatal(err)
+	}
+	resp, err := gceSvc.Objects.Get("chart-test", "index.yaml").Download()
+	if err != nil {
+		log.Fatal(err)
+	}
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	allIndex, err := helmrepo.LoadIndex(b)
+	allIndex.Merge(index)
+
+	updatedIndex, err := yaml.Marshal(allIndex)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Delete The previous index
+	err = gceSvc.Objects.Delete("chart-test", "index.yaml").Do()
 	if err != nil {
 		log.Println(err)
 	}
-	allIndex.Merge(index)
-	fmt.Println(allIndex)
+	// Upload new index
+	object := &bstore.Object{
+		Name: "index.yaml",
+	}
+	_, err = gceSvc.Objects.Insert("chart-test", object).Media(strings.NewReader(string(updatedIndex))).Do()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// upload work
 
 }
