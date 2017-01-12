@@ -13,7 +13,6 @@ import (
 	"github.com/appscode/chartify/pkg/repo"
 	"github.com/go-macaron/binding"
 	"github.com/go-macaron/toolbox"
-	//location "github.com/graymeta/stow/google"
 	"github.com/spf13/cobra"
 	bstore "google.golang.org/api/storage/v1"
 	macaron "gopkg.in/macaron.v1"
@@ -53,7 +52,7 @@ func NewCmdServe() *cobra.Command {
 			handler := repo.StaticBucket(repo.BucketOptions{PathPrefix: pathPrefix})
 			m.Get(pathPrefix+"/:container/", handler)
 			m.Get(pathPrefix+"/:container/*", handler)
-			m.Post("/container", binding.MultipartForm(ChartFile{}), func(chart ChartFile) string {
+			m.Post(pathPrefix+"/:container/", binding.MultipartForm(ChartFile{}), func(chart ChartFile) string {
 				UploadChart(chart)
 				return "Chart Uploaded successfully"
 			})
@@ -117,57 +116,76 @@ func NewCmdServe() *cobra.Command {
 func UploadChart(chart ChartFile) {
 	//TODO check if the chart is empty
 	file, err := chart.Data.Open()
-	if err != nil {
-		log.Println(err)
-	}
-	defer file.Close()
 	c, err := chartutil.LoadArchive(file)
 	if err != nil {
 		log.Println(err)
+		return
 	}
 	hash, err := provenance.Digest(file)
 	if err != nil {
 		log.Println(err)
+		return
 	}
 	index := helmrepo.NewIndexFile()
-	index.Add(c.Metadata, "test", "test-url", hash)
+	index.Add(c.Metadata, c.Metadata.Name, "test-url", hash) // TODO sauman
 	gceSvc, err := repo.GetGCEClient()
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
+	// check if the bucket exist or not
 	_, err = gceSvc.Buckets.Get("chart-test").Do()
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
+	// get existing index file
 	resp, err := gceSvc.Objects.Get("chart-test", "index.yaml").Download()
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
-	b, err := ioutil.ReadAll(resp.Body)
+	byteData, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
-	allIndex, err := helmrepo.LoadIndex(b)
+	allIndex, err := helmrepo.LoadIndex(byteData)
 	allIndex.Merge(index)
-
 	updatedIndex, err := yaml.Marshal(allIndex)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
-
 	// Delete The previous index
 	err = gceSvc.Objects.Delete("chart-test", "index.yaml").Do()
 	if err != nil {
 		log.Println(err)
+		return
 	}
 	// Upload new index
-	object := &bstore.Object{
-		Name: "index.yaml",
+	indexObject := &bstore.Object{
+		Name:        "index.yaml",
+		ContentType: "application/x-yaml",
 	}
-	_, err = gceSvc.Objects.Insert("chart-test", object).Media(strings.NewReader(string(updatedIndex))).Do()
+	_, err = gceSvc.Objects.Insert("chart-test", indexObject).Media(strings.NewReader(string(updatedIndex))).Do()
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
-	// upload work
-
+	chartObject := &bstore.Object{
+		Name:        chart.Data.Filename,
+		ContentType: "application/x-compressed-tar",
+	}
+	defer file.Close()
+	f, err := chart.Data.Open()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	_, err = gceSvc.Objects.Insert("chart-test", chartObject).Media(f).Do()
+	if err != nil {
+		log.Println(err)
+		return
+	}
 }
