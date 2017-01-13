@@ -1,9 +1,13 @@
 package cmd
 
 import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -11,18 +15,18 @@ import (
 	"time"
 
 	"github.com/appscode/chartify/pkg/repo"
+	"github.com/ghodss/yaml"
 	"github.com/go-macaron/binding"
 	"github.com/go-macaron/toolbox"
+	"github.com/juju/errors"
 	"github.com/spf13/cobra"
 	bstore "google.golang.org/api/storage/v1"
+	gcloud_gcs "google.golang.org/api/storage/v1"
 	macaron "gopkg.in/macaron.v1"
-	"k8s.io/heapster/Godeps/_workspace/src/gopkg.in/v2/yaml"
 	chartutil "k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/provenance"
 	helmrepo "k8s.io/helm/pkg/repo"
 )
-
-var s string
 
 func NewCmdServe() *cobra.Command {
 	var (
@@ -52,13 +56,11 @@ func NewCmdServe() *cobra.Command {
 			handler := repo.StaticBucket(repo.BucketOptions{PathPrefix: pathPrefix})
 			m.Get(pathPrefix+"/:container/", handler)
 			m.Get(pathPrefix+"/:container/*", handler)
-			m.Post(pathPrefix+"/:container/", binding.MultipartForm(ChartFile{}), func(chart ChartFile) string {
-				UploadChart(chart)
+			m.Post(pathPrefix+"/:container/", binding.MultipartForm(ChartFile{}), func(ctx *macaron.Context, chart ChartFile) string {
+				UploadChart(chart, ctx)
 				return "Chart Uploaded successfully"
 			})
-
 			log.Println("Listening on port", port)
-
 			srv := &http.Server{
 				Addr:         fmt.Sprintf(":%d", port),
 				ReadTimeout:  5 * time.Second,
@@ -98,7 +100,6 @@ func NewCmdServe() *cobra.Command {
 					tlsConfig.ClientCAs = caCertPool
 				}
 				tlsConfig.BuildNameToCertificate()
-
 				srv.TLSConfig = tlsConfig
 				log.Fatalln(srv.ListenAndServeTLS(certFile, keyFile))
 			}
@@ -113,9 +114,10 @@ func NewCmdServe() *cobra.Command {
 	return cmd
 }
 
-func UploadChart(chart ChartFile) {
+func UploadChart(chart ChartFile, ctx *macaron.Context) {
 	//TODO check if the chart is empty
 	file, err := chart.Data.Open()
+	defer file.Close()
 	c, err := chartutil.LoadArchive(file)
 	if err != nil {
 		log.Println(err)
@@ -126,66 +128,176 @@ func UploadChart(chart ChartFile) {
 		log.Println(err)
 		return
 	}
-	index := helmrepo.NewIndexFile()
-	index.Add(c.Metadata, c.Metadata.Name, "test-url", hash) // TODO sauman
-	gceSvc, err := repo.GetGCEClient()
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-	// check if the bucket exist or not
-	_, err = gceSvc.Buckets.Get("chart-test").Do()
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-	// get existing index file
-	resp, err := gceSvc.Objects.Get("chart-test", "index.yaml").Download()
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-	byteData, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-	allIndex, err := helmrepo.LoadIndex(byteData)
-	allIndex.Merge(index)
-	updatedIndex, err := yaml.Marshal(allIndex)
+	bucket := ctx.Params(":container")
+	gceSvc, err := repo.GetGCEClient(gcloud_gcs.DevstorageReadWriteScope)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	// Delete The previous index
-	err = gceSvc.Objects.Delete("chart-test", "index.yaml").Do()
+	// check if the bucket exist or not
+	_, err = gceSvc.Buckets.Get(bucket).Do()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	err = createLogFile(gceSvc, bucket)
+	defer deleteLogFile(gceSvc, bucket)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	resp, err := gceSvc.Objects.Get(bucket, indexfile).Download()
+	allIndex := helmrepo.NewIndexFile()
+	if err != nil {
+		log.Println("No index file found in the repository. Creating new index...\n")
+	} else {
+		byteData, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Println("Failed to update index file. Try again...", err)
+			return
+		}
+		allIndex, err = helmrepo.LoadIndex(byteData)
+		//delete the old index
+		err = gceSvc.Objects.Delete(bucket, indexfile).Do()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+	}
+	allIndex.Add(c.Metadata, c.Metadata.Name, ctx.Req.URL.Path, "sha256:"+hash)
+	updatedIndex, err := yaml.Marshal(allIndex)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	// Upload new index
 	indexObject := &bstore.Object{
-		Name:        "index.yaml",
-		ContentType: "application/x-yaml",
+		Name: indexfile,
 	}
-	_, err = gceSvc.Objects.Insert("chart-test", indexObject).Media(strings.NewReader(string(updatedIndex))).Do()
+	if err != nil {
+		log.Println("update error", err)
+	}
+	//Try again to upload if error TODO
+	_, err = gceSvc.Objects.Insert(bucket, indexObject).Media(strings.NewReader(string(updatedIndex))).Do()
 	if err != nil {
 		log.Println(err)
+		return
+	}
+	container, version := getContainername(chart.Data.Filename)
+	if container == "" || version == "" {
+		log.Println("Chart version not found")
 		return
 	}
 	chartObject := &bstore.Object{
-		Name:        chart.Data.Filename,
+		Name:        container + "/" + version + "/" + chart.Data.Filename,
 		ContentType: "application/x-compressed-tar",
 	}
-	defer file.Close()
 	f, err := chart.Data.Open()
+	defer f.Close()
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	_, err = gceSvc.Objects.Insert("chart-test", chartObject).Media(f).Do()
+	//upload the tar file
+	_, err = gceSvc.Objects.Insert(bucket, chartObject).Media(f).Do()
 	if err != nil {
 		log.Println(err)
 		return
 	}
+
+	//upload the untar file
+	f1, err := chart.Data.Open()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	files, err := getFilesFromTar(f1)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	for _, v := range files {
+		chartObject := &bstore.Object{
+			Name: container + "/" + version + "/" + v.name,
+		}
+		_, err = gceSvc.Objects.Insert(bucket, chartObject).Media(strings.NewReader(string(v.data))).Do()
+		if err != nil {
+			log.Println(err)
+		}
+	}
+}
+
+func getContainername(fileName string) (string, string) {
+	s := strings.Trim(fileName, ".tgz")
+	st := strings.SplitN(fileName, "-", 2)
+	if len(st) == 2 {
+		return st[0], s
+	}
+	return "", ""
+}
+
+func getFilesFromTar(in io.Reader) ([]*fileData, error) {
+	files := []*fileData{}
+	unzipped, err := gzip.NewReader(in)
+	if err != nil {
+		return files, err
+	}
+	defer unzipped.Close()
+	tarReader := tar.NewReader(unzipped)
+	i := 0
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		name := header.Name
+		switch header.Typeflag {
+		case tar.TypeDir:
+			continue
+		default:
+			buf := new(bytes.Buffer)
+			buf.ReadFrom(tarReader)
+			s := buf.String()
+			file := &fileData{
+				name: name,
+				data: s,
+			}
+			files = append(files, file)
+		}
+		i++
+	}
+	return files, nil
+}
+
+func createLogFile(gceSvc *gcloud_gcs.Service, bucket string) error {
+	logObject := &bstore.Object{
+		Name: logfile,
+	}
+	i := 0
+	for i = 0; i <= 5; i++ {
+		_, err := gceSvc.Objects.Insert(bucket, logObject).Media(strings.NewReader("time")).Do()
+		if err == nil {
+			break
+		}
+		time.Sleep(5 * time.Second)
+	}
+	if i > 5 {
+		return errors.New("Error. Try again...")
+	}
+	return nil
+}
+
+func deleteLogFile(gceSvc *gcloud_gcs.Service, bucket string) error {
+	for i := 0; i <= 5; i++ {
+		err := gceSvc.Objects.Delete(bucket, logfile).Do()
+		if err == nil {
+			break
+		}
+		time.Sleep(5 * time.Second)
+	}
+	return nil
 }
