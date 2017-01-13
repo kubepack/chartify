@@ -56,9 +56,8 @@ func NewCmdServe() *cobra.Command {
 			handler := repo.StaticBucket(repo.BucketOptions{PathPrefix: pathPrefix})
 			m.Get(pathPrefix+"/:container/", handler)
 			m.Get(pathPrefix+"/:container/*", handler)
-			m.Post(pathPrefix+"/:container/", binding.MultipartForm(ChartFile{}), func(ctx *macaron.Context, chart ChartFile) string {
+			m.Post(pathPrefix+"/:container/", binding.MultipartForm(ChartFile{}), func(ctx *macaron.Context, chart ChartFile) {
 				UploadChart(chart, ctx)
-				return "Chart Uploaded successfully"
 			})
 			log.Println("Listening on port", port)
 			srv := &http.Server{
@@ -120,30 +119,30 @@ func UploadChart(chart ChartFile, ctx *macaron.Context) {
 	defer file.Close()
 	c, err := chartutil.LoadArchive(file)
 	if err != nil {
-		log.Println(err)
+		http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	hash, err := provenance.Digest(file)
 	if err != nil {
-		log.Println(err)
+		http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	bucket := ctx.Params(":container")
 	gceSvc, err := repo.GetGCEClient(gcloud_gcs.DevstorageReadWriteScope)
 	if err != nil {
-		log.Println(err)
+		http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// check if the bucket exist or not
 	_, err = gceSvc.Buckets.Get(bucket).Do()
 	if err != nil {
-		log.Println(err)
+		http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = createLogFile(gceSvc, bucket)
 	defer deleteLogFile(gceSvc, bucket)
 	if err != nil {
-		log.Println(err)
+		http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	resp, err := gceSvc.Objects.Get(bucket, indexfile).Download()
@@ -153,39 +152,37 @@ func UploadChart(chart ChartFile, ctx *macaron.Context) {
 	} else {
 		byteData, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			log.Println("Failed to update index file. Try again...", err)
+			http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		allIndex, err = helmrepo.LoadIndex(byteData)
 		//delete the old index
 		err = gceSvc.Objects.Delete(bucket, indexfile).Do()
 		if err != nil {
-			log.Println(err)
+			http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
 	allIndex.Add(c.Metadata, c.Metadata.Name, ctx.Req.URL.Path, "sha256:"+hash)
 	updatedIndex, err := yaml.Marshal(allIndex)
 	if err != nil {
-		log.Println(err)
+		http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Upload new index
 	indexObject := &bstore.Object{
 		Name: indexfile,
 	}
-	if err != nil {
-		log.Println("update error", err)
-	}
 	//Try again to upload if error TODO
 	_, err = gceSvc.Objects.Insert(bucket, indexObject).Media(strings.NewReader(string(updatedIndex))).Do()
 	if err != nil {
-		log.Println(err)
+		http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	container, version := getContainername(chart.Data.Filename)
 	if container == "" || version == "" {
-		log.Println("Chart version not found")
+		err := errors.New("Chart version not found")
+		http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	chartObject := &bstore.Object{
@@ -195,25 +192,25 @@ func UploadChart(chart ChartFile, ctx *macaron.Context) {
 	f, err := chart.Data.Open()
 	defer f.Close()
 	if err != nil {
-		log.Println(err)
+		http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	//upload the tar file
 	_, err = gceSvc.Objects.Insert(bucket, chartObject).Media(f).Do()
 	if err != nil {
-		log.Println(err)
+		http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	//upload the untar file
 	f1, err := chart.Data.Open()
 	if err != nil {
-		log.Println(err)
+		http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	files, err := getFilesFromTar(f1)
 	if err != nil {
-		log.Println(err)
+		http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	for _, v := range files {
@@ -222,7 +219,7 @@ func UploadChart(chart ChartFile, ctx *macaron.Context) {
 		}
 		_, err = gceSvc.Objects.Insert(bucket, chartObject).Media(strings.NewReader(string(v.data))).Do()
 		if err != nil {
-			log.Println(err)
+			http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 		}
 	}
 }
