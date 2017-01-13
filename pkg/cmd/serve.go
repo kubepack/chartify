@@ -114,7 +114,7 @@ func NewCmdServe() *cobra.Command {
 }
 
 func UploadChart(chart ChartFile, ctx *macaron.Context) {
-	//TODO check if the chart is empty
+	url := ctx.Req.Host + ctx.Req.URL.Path
 	file, err := chart.Data.Open()
 	defer file.Close()
 	c, err := chartutil.LoadArchive(file)
@@ -163,7 +163,7 @@ func UploadChart(chart ChartFile, ctx *macaron.Context) {
 			return
 		}
 	}
-	allIndex.Add(c.Metadata, c.Metadata.Name, ctx.Req.URL.Path, "sha256:"+hash)
+	allIndex.Add(c.Metadata, c.Metadata.Name, url, "sha256:"+hash)
 	updatedIndex, err := yaml.Marshal(allIndex)
 	if err != nil {
 		http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
@@ -276,7 +276,7 @@ func createLogFile(gceSvc *gcloud_gcs.Service, bucket string) error {
 	}
 	i := 0
 	for i = 0; i <= 5; i++ {
-		_, err := gceSvc.Objects.Insert(bucket, logObject).Media(strings.NewReader("time")).Do()
+		_, err := gceSvc.Objects.Insert(bucket, logObject).Media(strings.NewReader(time.Now().String())).Do()
 		if err == nil {
 			break
 		}
