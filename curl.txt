@@ -1,0 +1,3 @@
+curl \
+-F "Data=@/home/sauman/chartserver/test-0.1.0.tgz" \
+http://localhost:50080/charts/chart-test
