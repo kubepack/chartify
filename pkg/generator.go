@@ -26,6 +26,9 @@ type Generator struct {
 	YamlFiles []string
 }
 
+var ChartObject map[string][]string
+var chnageObjectType = []string{"Secret", "Configmap", "PersistentVolume", "PersistentVolumeClaim"}
+
 func (g Generator) Create() (string, error) {
 	chartfile := chartMetaData(g.ChartName)
 	imageTag := "" //TODO
@@ -35,6 +38,7 @@ func (g Generator) Create() (string, error) {
 	if err == nil && !fi.IsDir() {
 		return cdir, fmt.Errorf("%s already exists and is not a directory", cdir)
 	}
+	ChartObject = getObjectNameForChange(g.YamlFiles)
 	if err := os.MkdirAll(cdir, 0755); err != nil {
 		return cdir, err
 	}
@@ -529,7 +533,7 @@ func configMapTemplate(configMap kapi.ConfigMap) (string, valueFileGenerator) {
 	value := make(map[string]interface{}, 0)
 	key := generateSafeKey(configMap.ObjectMeta.Name)
 	configMap.ObjectMeta = generateObjectMetaTemplate(configMap.ObjectMeta, key, value, configMap.ObjectMeta.Name)
-	configMap.ObjectMeta.Name = key // not using release name befor configmap
+	//configMap.ObjectMeta.Name = key // not using release name befor configmap
 	configMapData, err := ylib.Marshal(configMap)
 	if err != nil {
 		log.Fatal(err)
@@ -549,7 +553,7 @@ func secretTemplate(secret kapi.Secret) (string, valueFileGenerator) {
 	secretDataMap := make(map[string]interface{}, 0)
 	key := generateSafeKey(secret.ObjectMeta.Name)
 	secret.ObjectMeta = generateObjectMetaTemplate(secret.ObjectMeta, key, value, secret.ObjectMeta.Name)
-	secret.ObjectMeta.Name = key
+	//secret.ObjectMeta.Name = key
 	if len(secret.Data) != 0 {
 		for k, v := range secret.Data {
 			value[k] = v
@@ -649,4 +653,37 @@ func mapToValueMaker(mp map[string]string, value map[string]interface{}, key str
 		mp[k] = fmt.Sprintf("{{.Values.%s.%s}}", key, k)
 	}
 	return mp
+}
+
+func getObjectNameForChange(objects []string) map[string][]string {
+	obj := make(map[string][]string)
+	for _, v := range objects {
+		kind, name := getObjectKind(v)
+		for _, t := range chnageObjectType {
+			if kind == t {
+				obj[kind] = append(obj[kind], name)
+			}
+		}
+	}
+	return obj
+}
+
+func getObjectKind(yamlData string) (string, string) {
+	kubeJson, err := yaml.ToJSON([]byte(yamlData))
+	if err != nil {
+		log.Fatal(err)
+	}
+	var typeMeta unversioned.TypeMeta
+
+	err = json.Unmarshal(kubeJson, &typeMeta)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var objMeta kapi.ObjectMeta
+	err = json.Unmarshal(kubeJson, &objMeta)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return typeMeta.Kind, objMeta.Name
+
 }

@@ -77,12 +77,17 @@ func generateTemplateForVolume(volumes []kapi.Volume, key string, value map[stri
 		vol = append(vol, volume)
 		if volume.PersistentVolumeClaim != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
-			volume.PersistentVolumeClaim.ClaimName = fmt.Sprintf(`{{template "fullname"}}-%s`, volume.PersistentVolumeClaim.ClaimName)
+			if checkIfNameExist(volume.PersistentVolumeClaim.ClaimName, "PersistentVolumeClaim") {
+				volume.PersistentVolumeClaim.ClaimName = fmt.Sprintf(`{{template "fullname"}}-%s`, volume.PersistentVolumeClaim.ClaimName)
+			}
 		} else if volume.ConfigMap != nil {
-			//volume.ConfigMap.Name = fmt.Sprintf(`{{ template "fullname" . }}-%s`, volume.ConfigMap.Name) // TODO if config map is deployed by helm map name will be like that
+			if checkIfNameExist(volume.ConfigMap.Name, "Configmap") {
+				volume.ConfigMap.Name = fmt.Sprintf(`{{ template "fullname" . }}-%s`, volume.ConfigMap.Name)
+			}
 		} else if volume.Secret != nil {
-			//volume.Secret.SecretName = fmt.Sprintf(`{{ template "fullname" . }}-%s`, volume.Secret.SecretName) // TODO if secret is deployed by helm map name will be like that
-			//TODO add items
+			if checkIfNameExist(volume.Secret.SecretName, "Secret") {
+				volume.Secret.SecretName = fmt.Sprintf(`{{ template "fullname" . }}-%s`, volume.Secret.SecretName)
+			} //TODO add items
 		} else if volume.Glusterfs != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
 			volumeMap["Path"] = volume.Glusterfs.Path
@@ -583,4 +588,15 @@ func VolumeTemplateForElement(volumeName string, element string) string {
 
 func buildIfConditionForVolume(volumeName string) string {
 	return fmt.Sprintf("{{- if .Values.persistence.%s.enabled}}", volumeName)
+}
+
+func checkIfNameExist(name string, objType string) bool {
+	flag := false
+	for _, v := range ChartObject[objType] {
+		if v == name {
+			flag = true
+			break
+		}
+	}
+	return flag
 }
