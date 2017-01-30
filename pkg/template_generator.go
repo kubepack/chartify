@@ -243,7 +243,7 @@ func generateTemplateForContainer(containers []kapi.Container, key string, value
 		containerName := generateSafeKey(container.Name)
 		container.Image = addTemplateImageValue(containerName, container.Image, key, containterValue)
 		if len(container.ImagePullPolicy) != 0 {
-			containterValue["ImagePullPolicy"] = string(container.ImagePullPolicy)
+			containterValue["imagePullPolicy"] = string(container.ImagePullPolicy)
 			container.ImagePullPolicy = kapi.PullPolicy(addContainerValue(key, containerName, "imagePullPolicy"))
 		}
 		if len(container.Env) != 0 {
