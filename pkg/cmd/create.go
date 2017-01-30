@@ -23,7 +23,7 @@ func NewCmdCreate() *cobra.Command {
 		Short: "Create Helm Charts from Kubernetes api objects",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
-				fmt.Println("ERROR : Provide a CharName")
+				fmt.Println("ERROR : Provide a ChartName")
 				os.Exit(1)
 			}
 			gen := pkg.Generator{
