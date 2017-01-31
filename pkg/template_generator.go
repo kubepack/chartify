@@ -14,7 +14,7 @@ import (
 )
 
 func generateObjectMetaTemplate(objectMeta kapi.ObjectMeta, key string, value map[string]interface{}, extraTagForName string) kapi.ObjectMeta {
-	key = checkKeyValue(key)
+	key = generateSafeKey(key)
 	if len(objectMeta.Name) != 0 {
 		objectMeta.Name = fmt.Sprintf(`{{ template "fullname" . }}`)
 	}
@@ -23,19 +23,19 @@ func generateObjectMetaTemplate(objectMeta kapi.ObjectMeta, key string, value ma
 	}
 	if len(objectMeta.ClusterName) != 0 {
 		value["ClusterName"] = objectMeta.ClusterName
-		objectMeta.ClusterName = fmt.Sprintf("{{.Values%s.ClusterName}}", key)
+		objectMeta.ClusterName = fmt.Sprintf("{{.Values.%s.ClusterName}}", key)
 	}
 	if len(objectMeta.GenerateName) != 0 {
 		value["GenerateName"] = objectMeta.GenerateName
-		objectMeta.GenerateName = fmt.Sprintf("{{.Values%s.GenerateName}}", key)
+		objectMeta.GenerateName = fmt.Sprintf("{{.Values.%s.GenerateName}}", key)
 	}
 	if len(objectMeta.Namespace) != 0 {
 		value["Namespace"] = objectMeta.Namespace
-		objectMeta.Namespace = fmt.Sprintf("{{.Values%s.Namespace}}", key)
+		objectMeta.Namespace = fmt.Sprintf("{{.Values.%s.Namespace}}", key)
 	}
 	if len(objectMeta.SelfLink) != 0 {
 		value["SelfLink"] = objectMeta.SelfLink
-		objectMeta.SelfLink = fmt.Sprintf("{{.Values%s.SelfLink}}", key)
+		objectMeta.SelfLink = fmt.Sprintf("{{.Values.%s.SelfLink}}", key)
 	}
 	objectMeta.Labels = generateTemplateForLables(objectMeta.Labels)
 	return objectMeta
@@ -43,28 +43,28 @@ func generateObjectMetaTemplate(objectMeta kapi.ObjectMeta, key string, value ma
 
 func generateTemplateForPodSpec(podSpec kapi.PodSpec, key string, value map[string]interface{}) kapi.PodSpec {
 	podSpec.Containers = generateTemplateForContainer(podSpec.Containers, key, value)
-	key = checkKeyValue(key)
+	key = generateSafeKey(key)
 	if len(podSpec.Hostname) != 0 {
 		value["HostName"] = podSpec.Hostname
-		podSpec.Hostname = fmt.Sprintf("{{.Values%s.HostName}}", key)
+		podSpec.Hostname = fmt.Sprintf("{{.Values.%s.HostName}}", key)
 	}
 	if len(podSpec.Subdomain) != 0 {
 		value["Subdomain"] = podSpec.Subdomain
-		podSpec.Subdomain = fmt.Sprintf("{{.Values%s.Subdomain}}", key)
+		podSpec.Subdomain = fmt.Sprintf("{{.Values.%s.Subdomain}}", key)
 	}
 	if len(podSpec.NodeName) != 0 {
 		value["Nodename"] = podSpec.NodeName
-		podSpec.NodeName = fmt.Sprintf("{{.Values%s.Nodename}}", key)
+		podSpec.NodeName = fmt.Sprintf("{{.Values.%s.Nodename}}", key)
 	}
 	if len(podSpec.ServiceAccountName) != 0 {
 		value["ServiceAccountName"] = podSpec.ServiceAccountName
-		podSpec.ServiceAccountName = fmt.Sprintf("{{.Values%s.ServiceAccountName}}", key)
+		podSpec.ServiceAccountName = fmt.Sprintf("{{.Values.%s.ServiceAccountName}}", key)
 	}
 	return podSpec
 }
 
 func generateTemplateForVolume(volumes []kapi.Volume, key string, value map[string]interface{}) (string, map[string]interface{}) {
-	key = checkKeyValue(key)
+	key = generateSafeKey(key)
 	volumeTemplate := ""
 	ifCondition := ""
 	partialvolumeTemplate := ""
@@ -91,7 +91,6 @@ func generateTemplateForVolume(volumes []kapi.Volume, key string, value map[stri
 		} else if volume.Glusterfs != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
 			volumeMap["Path"] = volume.Glusterfs.Path
-
 			volumeMap["EndpointsName"] = volume.Glusterfs.EndpointsName
 			volume.Glusterfs.EndpointsName = VolumeTemplateForElement(volume.Name, "EndpointsName")
 			volume.Glusterfs.Path = VolumeTemplateForElement(volume.Name, "Path")
@@ -256,8 +255,8 @@ func generateTemplateForContainer(containers []kapi.Container, key string, value
 				if len(v.Value) != 0 {
 					tmp := generateSafeKey(v.Name)
 					containterValue[tmp] = v.Value
-					key := checkKeyValue(key)
-					container.Env[k].Value = fmt.Sprintf("{{.Values%s.%s.%s}}", key, generateSafeKey(container.Name), tmp) //TODO test
+					//key := checkKeyValue(key)
+					container.Env[k].Value = fmt.Sprintf("{{.Values.%s.%s.%s}}", key, generateSafeKey(container.Name), tmp) //TODO test
 				}
 				// Secret of Configmap has to be deployed by chart. else value from wont work.
 				/*				if v.ValueFrom != nil {
@@ -312,8 +311,8 @@ func SaveChartfile(filename string, cf *chart.Metadata) error {
 }
 
 func addContainerValue(key string, s1 string, s2 string) string {
-	key = checkKeyValue(key)
-	value := fmt.Sprintf("{{.Values%s.%s.%s}}", key, s1, s2)
+	//key = checkKeyValue(key)
+	value := fmt.Sprintf("{{.Values.%s.%s.%s}}", key, s1, s2)
 	return value
 }
 
@@ -321,9 +320,10 @@ func addTemplateImageValue(containerName string, image string, key string, conta
 	img := strings.Split(image, ":")
 	imageName := ""
 	imageTag := "latest"
-	key = checkKeyValue(key)
-	imageNameTemplate := fmt.Sprintf("{{.Values%s.%s.image}}", key, containerName)
-	imageTagTemplate := fmt.Sprintf("{{.Values%s.%s.imageTag}}", key, containerName)
+	//key = checkKeyValue(key)
+	key = generateSafeKey(key)
+	imageNameTemplate := fmt.Sprintf("{{.Values.%s.%s.image}}", key, containerName)
+	imageTagTemplate := fmt.Sprintf("{{.Values.%s.%s.imageTag}}", key, containerName)
 	if len(img) == 2 {
 		imageName = img[0]
 		imageTag = img[1]
@@ -507,42 +507,40 @@ func addVolumeInRcTemplate(rc string, volumes string) string {
 }
 
 func generateServiceSpecTemplate(svc kapi.ServiceSpec, key string, value map[string]interface{}) kapi.ServiceSpec {
-	if len(key) != 0 {
-		key = "." + key
-	}
+	key = generateSafeKey(key)
 	if len(svc.ClusterIP) != 0 {
 		value["ClusterIp"] = svc.ClusterIP
-		svc.ClusterIP = fmt.Sprintf("{{.Values%s.ClusterIp}}", key)
+		svc.ClusterIP = fmt.Sprintf("{{.Values.%s.ClusterIp}}", key)
 	}
 	if len(svc.ExternalName) != 0 {
 		value["ExternalName"] = svc.ExternalName
-		svc.ExternalName = fmt.Sprintf("{{.Values%s.ExternalName}}", key)
+		svc.ExternalName = fmt.Sprintf("{{.Values.%s.ExternalName}}", key)
 	}
 	if len(svc.LoadBalancerIP) != 0 {
 		value["LoadBalancer"] = svc.LoadBalancerIP
-		svc.LoadBalancerIP = fmt.Sprintf("{{.Values%s.LoadBalancer}}", key)
+		svc.LoadBalancerIP = fmt.Sprintf("{{.Values.%s.LoadBalancer}}", key)
 	}
 	if len(string(svc.Type)) != 0 {
 		value["ServiceType"] = string(svc.Type)
-		svc.Type = kapi.ServiceType(fmt.Sprintf("{{.Values%s.ServiceType}}", key))
+		svc.Type = kapi.ServiceType(fmt.Sprintf("{{.Values.%s.ServiceType}}", key))
 	}
 	if len(string(svc.SessionAffinity)) != 0 {
 		value["SessionAffinity"] = string(svc.SessionAffinity)
-		svc.SessionAffinity = kapi.ServiceAffinity(fmt.Sprintf("{{.Values%s.SessionAffinity}}", key))
+		svc.SessionAffinity = kapi.ServiceAffinity(fmt.Sprintf("{{.Values.%s.SessionAffinity}}", key))
 	}
 	return svc
 }
 
 func generatePersistentVolumeClaimSpec(pvcspec kapi.PersistentVolumeClaimSpec, key string, value map[string]interface{}) kapi.PersistentVolumeClaimSpec {
-	key = checkKeyValue(key)
+	key = generateSafeKey(key)
 	if len(pvcspec.VolumeName) != 0 {
 		value["VolumeName"] = pvcspec.VolumeName
-		pvcspec.VolumeName = fmt.Sprintf("{{.Values%s.VolumeName}}", key)
+		pvcspec.VolumeName = fmt.Sprintf("{{.Values.%s.VolumeName}}", key)
 	}
 	if len(pvcspec.AccessModes) != 0 {
 		value["AccessMode"] = pvcspec.AccessModes[0] //TODO sauman (multiple access mode)
 		pvcspec.AccessModes = nil
-		pvcspec.AccessModes = append(pvcspec.AccessModes, kapi.PersistentVolumeAccessMode(fmt.Sprintf("{{.Values.persistence%s.AccessMode}}", key)))
+		pvcspec.AccessModes = append(pvcspec.AccessModes, kapi.PersistentVolumeAccessMode(fmt.Sprintf("{{.Values.persistence.%s.AccessMode}}", key)))
 	}
 	if pvcspec.Resources.Requests != nil {
 		//TODO sauman
@@ -561,13 +559,15 @@ func generatePersistentVolumeSpec(spec kapi.PersistentVolumeSpec, key string, va
 	return spec
 }
 
-func checkKeyValue(key string) string {
-	// TODO From key have to remove unnecessary characters
+/*func checkKeyValue(key string) string {
+	if strings.HasPrefix(key, ".") {
+		return key
+	}
 	if len(key) != 0 {
 		key = "." + key
 	}
 	return key
-}
+}*/
 
 func generateSafeKey(name string) string {
 	newName := ""

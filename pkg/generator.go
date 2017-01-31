@@ -402,6 +402,7 @@ func deploymentTemplate(deployment kext.Deployment) (string, valueFileGenerator)
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
 	key := generateSafeKey(deployment.ObjectMeta.Name)
+	//key = checkKeyValue(key)
 	deployment.ObjectMeta = generateObjectMetaTemplate(deployment.ObjectMeta, key, value, deployment.ObjectMeta.Name)
 	deployment.Spec.Template.Spec = generateTemplateForPodSpec(deployment.Spec.Template.Spec, key, value)
 	if len(deployment.Spec.Template.Spec.Volumes) != 0 {
@@ -409,10 +410,12 @@ func deploymentTemplate(deployment kext.Deployment) (string, valueFileGenerator)
 		deployment.Spec.Template.Spec.Volumes = nil
 	}
 	if len(string(deployment.Spec.Strategy.Type)) != 0 {
-		deployment.Spec.Strategy.Type = kext.DeploymentStrategyType(fmt.Sprintf("{{.Values.%sDeploymentStrategy}}", key))
-		//generateTemplateForSingleValue(string(deployment.Spec.Strategy.Type), "DeploymentStrategy", value)
 
-		value["DeploymentStrategy"] = deployment.Spec.Strategy.Type //TODO test
+		//generateTemplateForSingleValue(string(deployment.Spec.Strategy.Type), "DeploymentStrategy", value)
+		if len(string(deployment.Spec.Strategy.Type)) != 0 {
+			value["DeploymentStrategy"] = deployment.Spec.Strategy.Type
+			deployment.Spec.Strategy.Type = kext.DeploymentStrategyType(fmt.Sprintf("{{.Values.%s.DeploymentStrategy}}", key))
+		}
 	}
 	template := ""
 	tempDeploymentByte, err := ylib.Marshal(deployment)
