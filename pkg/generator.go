@@ -38,7 +38,7 @@ func (g Generator) Create() (string, error) {
 	if err == nil && !fi.IsDir() {
 		return cdir, fmt.Errorf("%s already exists and is not a directory", cdir)
 	}
-	ChartObject = getObjectNameForChange(g.YamlFiles)
+	ChartObject = getInsideObjects(g.YamlFiles)
 	if err := os.MkdirAll(cdir, 0755); err != nil {
 		return cdir, err
 	}
@@ -580,7 +580,8 @@ func secretTemplate(secret kapi.Secret) (string, valueFileGenerator) {
 func pvcTemplate(pvc kapi.PersistentVolumeClaim) (string, valueFileGenerator) {
 	tempValue := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
-	key := generateSafeKey(pvc.ObjectMeta.Name)
+	rawKey := generateSafeKey(pvc.ObjectMeta.Name)
+	key := "persistence."+ rawKey
 	pvc.ObjectMeta = generateObjectMetaTemplate(pvc.ObjectMeta, key, tempValue, pvc.ObjectMeta.Name)
 	pvc.Spec = generatePersistentVolumeClaimSpec(pvc.Spec, key, tempValue)
 	pvcData, err := ylib.Marshal(pvc)
@@ -588,9 +589,9 @@ func pvcTemplate(pvc kapi.PersistentVolumeClaim) (string, valueFileGenerator) {
 		log.Fatal(err)
 	}
 	temp := removeEmptyFields(string(pvcData))
-	pvcTemplateData := fmt.Sprintf("{{- if .Values.persistence.%s.enabled -}}\n%s{{- end -}}", key, temp)
+	pvcTemplateData := fmt.Sprintf("{{- if .Values.%s.enabled -}}\n%s{{- end -}}", key, temp)
 	tempValue["enabled"] = true // By Default use persistence volume true
-	persistence[key] = tempValue
+	persistence[rawKey] = tempValue
 	return pvcTemplateData, valueFileGenerator{persistence: persistence}
 }
 
@@ -658,10 +659,10 @@ func mapToValueMaker(mp map[string]string, value map[string]interface{}, key str
 	return mp
 }
 
-func getObjectNameForChange(objects []string) map[string][]string {
+func getInsideObjects(objects []string) map[string][]string {
 	obj := make(map[string][]string)
 	for _, v := range objects {
-		kind, name := getObjectKind(v)
+		kind, name := getObjectKindAndName(v)
 		for _, t := range chnageObjectType {
 			if kind == t {
 				obj[kind] = append(obj[kind], name)
@@ -671,22 +672,34 @@ func getObjectNameForChange(objects []string) map[string][]string {
 	return obj
 }
 
-func getObjectKind(yamlData string) (string, string) {
+func getObjectKindAndName(yamlData string) (string, string) {
 	kubeJson, err := yaml.ToJSON([]byte(yamlData))
 	if err != nil {
 		log.Fatal(err)
 	}
+	m := make(map[string]interface{})
+	err = json.Unmarshal(kubeJson, &m)
+	if err != nil {
+		log.Println(err)
+	}
+	objMeta, ok := m["metadata"].(map[string]interface{})
+	if !ok {
+		log.Fatal("Name not found")
+	}
+	name := objMeta["name"]
 	var typeMeta unversioned.TypeMeta
 
 	err = json.Unmarshal(kubeJson, &typeMeta)
 	if err != nil {
 		log.Fatal(err)
 	}
-	var objMeta kapi.ObjectMeta
-	err = json.Unmarshal(kubeJson, &objMeta)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
-	return typeMeta.Kind, objMeta.Name
+	objName, ok := name.(string)
+	if !ok {
+		return typeMeta.Kind, ""
+	}
+	return typeMeta.Kind, objName
 
 }

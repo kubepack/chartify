@@ -14,7 +14,6 @@ import (
 )
 
 func generateObjectMetaTemplate(objectMeta kapi.ObjectMeta, key string, value map[string]interface{}, extraTagForName string) kapi.ObjectMeta {
-	key = generateSafeKey(key)
 	if len(objectMeta.Name) != 0 {
 		objectMeta.Name = fmt.Sprintf(`{{ template "fullname" . }}`)
 	}
@@ -43,7 +42,7 @@ func generateObjectMetaTemplate(objectMeta kapi.ObjectMeta, key string, value ma
 
 func generateTemplateForPodSpec(podSpec kapi.PodSpec, key string, value map[string]interface{}) kapi.PodSpec {
 	podSpec.Containers = generateTemplateForContainer(podSpec.Containers, key, value)
-	key = generateSafeKey(key)
+	//key = generateSafeKey(key)
 	if len(podSpec.Hostname) != 0 {
 		value["HostName"] = podSpec.Hostname
 		podSpec.Hostname = fmt.Sprintf("{{.Values.%s.HostName}}", key)
@@ -64,7 +63,6 @@ func generateTemplateForPodSpec(podSpec kapi.PodSpec, key string, value map[stri
 }
 
 func generateTemplateForVolume(volumes []kapi.Volume, key string, value map[string]interface{}) (string, map[string]interface{}) {
-	key = generateSafeKey(key)
 	volumeTemplate := ""
 	ifCondition := ""
 	partialvolumeTemplate := ""
@@ -76,7 +74,7 @@ func generateTemplateForVolume(volumes []kapi.Volume, key string, value map[stri
 		vol := []kapi.Volume{}
 		vol = append(vol, volume)
 		if volume.PersistentVolumeClaim != nil {
-			ifCondition = buildIfConditionForVolume(volume.Name)
+			ifCondition = buildIfConditionForVolume(volume.PersistentVolumeClaim.ClaimName)
 			if checkIfNameExist(volume.PersistentVolumeClaim.ClaimName, "PersistentVolumeClaim") {
 				volume.PersistentVolumeClaim.ClaimName = fmt.Sprintf(`{{template "fullname"}}-%s`, volume.PersistentVolumeClaim.ClaimName)
 			}
@@ -507,7 +505,6 @@ func addVolumeInRcTemplate(rc string, volumes string) string {
 }
 
 func generateServiceSpecTemplate(svc kapi.ServiceSpec, key string, value map[string]interface{}) kapi.ServiceSpec {
-	key = generateSafeKey(key)
 	if len(svc.ClusterIP) != 0 {
 		value["ClusterIp"] = svc.ClusterIP
 		svc.ClusterIP = fmt.Sprintf("{{.Values.%s.ClusterIp}}", key)
@@ -532,7 +529,6 @@ func generateServiceSpecTemplate(svc kapi.ServiceSpec, key string, value map[str
 }
 
 func generatePersistentVolumeClaimSpec(pvcspec kapi.PersistentVolumeClaimSpec, key string, value map[string]interface{}) kapi.PersistentVolumeClaimSpec {
-	key = generateSafeKey(key)
 	if len(pvcspec.VolumeName) != 0 {
 		value["VolumeName"] = pvcspec.VolumeName
 		pvcspec.VolumeName = fmt.Sprintf("{{.Values.%s.VolumeName}}", key)
@@ -540,7 +536,7 @@ func generatePersistentVolumeClaimSpec(pvcspec kapi.PersistentVolumeClaimSpec, k
 	if len(pvcspec.AccessModes) != 0 {
 		value["AccessMode"] = pvcspec.AccessModes[0] //TODO sauman (multiple access mode)
 		pvcspec.AccessModes = nil
-		pvcspec.AccessModes = append(pvcspec.AccessModes, kapi.PersistentVolumeAccessMode(fmt.Sprintf("{{.Values.persistence.%s.AccessMode}}", key)))
+		pvcspec.AccessModes = append(pvcspec.AccessModes, kapi.PersistentVolumeAccessMode(fmt.Sprintf("{{.Values.%s.AccessMode}}", key)))
 	}
 	if pvcspec.Resources.Requests != nil {
 		//TODO sauman
