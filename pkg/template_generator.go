@@ -555,16 +555,6 @@ func generatePersistentVolumeSpec(spec kapi.PersistentVolumeSpec, key string, va
 	return spec
 }
 
-/*func checkKeyValue(key string) string {
-	if strings.HasPrefix(key, ".") {
-		return key
-	}
-	if len(key) != 0 {
-		key = "." + key
-	}
-	return key
-}*/
-
 func generateSafeKey(name string) string {
 	newName := ""
 	for _, v := range name {

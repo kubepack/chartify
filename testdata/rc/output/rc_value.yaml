@@ -1,4 +1,6 @@
 nginx:
+  Namespace: default
   nginx:
     image: nginx
+    imagePullPolicy: Always
     imageTag: latest

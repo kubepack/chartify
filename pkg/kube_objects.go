@@ -76,7 +76,7 @@ func (ko KubeObjects) readKubernetesObjects(kubeClient clientset.Interface) []st
 	if len(ko.PersistentVolumeClaims) != 0 {
 		yamlFiles = appendSlice(yamlFiles, ko.getPersistentVolumeClaims(kubeClient))
 	}
-	if len(ko.Jobs) != 0 { //TODO sauman
+	if len(ko.Jobs) != 0 {
 		yamlFiles = appendSlice(yamlFiles, ko.getJobs(kubeClient))
 	}
 	if len(ko.Daemons) != 0 {
@@ -376,22 +376,22 @@ func (ko KubeObjects) getReplicaSets(kubeClient clientset.Interface) []string {
 	var yamlFiles []string
 	for _, v := range ko.ReplicaSets {
 		objectName, namespace := splitNamespace(v)
-		rc, err := kubeClient.Extensions().ReplicaSets(namespace).Get(objectName)
+		rs, err := kubeClient.Extensions().ReplicaSets(namespace).Get(objectName)
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := api.GetReference(rc)
+		ref, err := api.GetReference(rs)
 		if err != nil {
 			log.Fatal(err)
 		}
-		if rc.Kind == "" {
-			rc.Kind = ref.Kind
+		if rs.Kind == "" {
+			rs.Kind = ref.Kind
 		}
-		if rc.APIVersion == "" {
-			rc.APIVersion = ref.APIVersion
+		if rs.APIVersion == "" {
+			rs.APIVersion = makeAPIVersion(rs.GetSelfLink())
 		}
-		rc.Status = extensions.ReplicaSetStatus{}
-		dataByte, err := yaml.Marshal(rc)
+		rs.Status = extensions.ReplicaSetStatus{}
+		dataByte, err := yaml.Marshal(rs)
 		yamlFiles = append(yamlFiles, string(dataByte))
 		if err != nil {
 			log.Fatal(err)

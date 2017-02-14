@@ -1,7 +1,6 @@
 mypod:
   Namespace: default
-  SelfLink: /api/v1/namespaces/default/pods/mypod
   mypod:
-    ImagePullPolicy: Always
     image: redis
+    imagePullPolicy: Always
     imageTag: latest
