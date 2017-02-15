@@ -265,7 +265,7 @@ func (g Generator) Create() (string, error) {
 		log.Fatal(err)
 	}
 	helperDir := filepath.Join(templateLocation, HelpersName)
-	err = ioutil.WriteFile(helperDir, []byte(defaultHelpers), 0644) //TODO  change default values
+	err = ioutil.WriteFile(helperDir, []byte(defaultHelpers), 0644)
 	valueDir := filepath.Join(cdir, ValuesfileName)
 	err = ioutil.WriteFile(valueDir, []byte(valueFileData), 0644)
 	if err != nil {
@@ -380,6 +380,11 @@ func replicaSetTemplate(replicaSet kext.ReplicaSet) (string, valueFileGenerator)
 		value["persistence"] = true
 		replicaSet.Spec.Template.Spec.Volumes = nil
 	}
+
+	if replicaSet.Spec.Selector != nil {
+		modifyLabelSelector(replicaSet.Spec.Selector, replicaSet.Spec.Template.Labels, replicaSet.ObjectMeta.Labels)
+	}
+
 	template := ""
 	tempRcSetByte, err := ylib.Marshal(replicaSet)
 	if err != nil {
@@ -417,6 +422,11 @@ func deploymentTemplate(deployment kext.Deployment) (string, valueFileGenerator)
 			deployment.Spec.Strategy.Type = kext.DeploymentStrategyType(fmt.Sprintf("{{.Values.%s.DeploymentStrategy}}", key))
 		}
 	}
+
+	if deployment.Spec.Selector != nil {
+		modifyLabelSelector(deployment.Spec.Selector, deployment.Spec.Template.Labels, deployment.ObjectMeta.Labels)
+	}
+
 	template := ""
 	tempDeploymentByte, err := ylib.Marshal(deployment)
 	if err != nil {
@@ -444,6 +454,11 @@ func daemonsetTemplate(daemonset kext.DaemonSet) (string, valueFileGenerator) {
 		value["persistence"] = true
 		daemonset.Spec.Template.Spec.Volumes = nil
 	}
+
+	if daemonset.Spec.Selector != nil {
+		modifyLabelSelector(daemonset.Spec.Selector, daemonset.Spec.Template.Labels, daemonset.ObjectMeta.Labels)
+	}
+
 	template := ""
 	//valueData, err := ylib.Marshal(value)
 
@@ -483,6 +498,11 @@ func statefulsetTemplate(statefulset apps.StatefulSet) (string, valueFileGenerat
 		log.Fatal(err)
 	}
 	tempStatefulSet := removeEmptyFields(string(tempStatefulSetByte))
+
+	if statefulset.Spec.Selector != nil {
+		modifyLabelSelector(statefulset.Spec.Selector, statefulset.Spec.Template.Labels, statefulset.ObjectMeta.Labels)
+	}
+
 	template := ""
 	if len(volumes) != 0 {
 		template = addVolumeToTemplateForRc(tempStatefulSet, volumes)
@@ -510,6 +530,11 @@ func jobTemplate(job batch.Job) (string, valueFileGenerator) {
 	}
 	tempJob := removeEmptyFields(string(tempJobByte))
 	template := ""
+
+	if job.Spec.Selector != nil {
+		modifyLabelSelector(job.Spec.Selector, job.Spec.Template.Labels, job.ObjectMeta.Labels)
+	}
+
 	if len(volumes) != 0 {
 		template = addVolumeToTemplateForRc(tempJob, volumes)
 	} else {
@@ -581,7 +606,7 @@ func pvcTemplate(pvc kapi.PersistentVolumeClaim) (string, valueFileGenerator) {
 	tempValue := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
 	rawKey := generateSafeKey(pvc.ObjectMeta.Name)
-	key := "persistence."+ rawKey
+	key := "persistence." + rawKey
 	pvc.ObjectMeta = generateObjectMetaTemplate(pvc.ObjectMeta, key, tempValue, pvc.ObjectMeta.Name)
 	pvc.Spec = generatePersistentVolumeClaimSpec(pvc.Spec, key, tempValue)
 	pvcData, err := ylib.Marshal(pvc)
@@ -701,5 +726,23 @@ func getObjectKindAndName(yamlData string) (string, string) {
 		return typeMeta.Kind, ""
 	}
 	return typeMeta.Kind, objName
+}
 
+func modifyLabelSelector(selector *unversioned.LabelSelector, templateLabels map[string]string, metaLabels map[string]string) {
+	if len(selector.MatchLabels) == 0 {
+		return
+	}
+	for k, v := range selector.MatchLabels {
+		_, ok := templateLabels[k]
+		if !ok {
+			continue
+		}
+		_, ok = metaLabels[k]
+		if !ok {
+			return
+		}
+		selector.MatchLabels[k] = "{{.Release.Name}}-" + v
+		templateLabels[k] = selector.MatchLabels[k]
+		metaLabels[k] = selector.MatchLabels[k]
+	}
 }
