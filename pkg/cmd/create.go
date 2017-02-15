@@ -40,7 +40,6 @@ func NewCmdCreate() *cobra.Command {
 				}
 				gen.YamlFiles = ko.Extract()
 			}
-			fmt.Println(gen.YamlFiles)
 			gen.Create()
 		},
 	}

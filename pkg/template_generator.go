@@ -21,20 +21,16 @@ func generateObjectMetaTemplate(objectMeta kapi.ObjectMeta, key string, value ma
 		objectMeta.Name = fmt.Sprintf("%s-%s", objectMeta.Name, extraTagForName)
 	}
 	if len(objectMeta.ClusterName) != 0 {
-		value["ClusterName"] = objectMeta.ClusterName
-		objectMeta.ClusterName = fmt.Sprintf("{{.Values.%s.ClusterName}}", key)
+		value[ClusterName] = objectMeta.ClusterName
+		objectMeta.ClusterName = fmt.Sprintf("{{.Values.%s.%s}}", key, ClusterName)
 	}
 	if len(objectMeta.GenerateName) != 0 {
-		value["GenerateName"] = objectMeta.GenerateName
-		objectMeta.GenerateName = fmt.Sprintf("{{.Values.%s.GenerateName}}", key)
+		value[GenerateName] = objectMeta.GenerateName
+		objectMeta.GenerateName = fmt.Sprintf("{{.Values.%s.%s}}", key, GenerateName)
 	}
 	if len(objectMeta.Namespace) != 0 {
-		value["Namespace"] = objectMeta.Namespace
-		objectMeta.Namespace = fmt.Sprintf("{{.Values.%s.Namespace}}", key)
-	}
-	if len(objectMeta.SelfLink) != 0 {
-		value["SelfLink"] = objectMeta.SelfLink
-		objectMeta.SelfLink = fmt.Sprintf("{{.Values.%s.SelfLink}}", key)
+		value[Namespace] = objectMeta.Namespace
+		objectMeta.Namespace = fmt.Sprintf("{{.Values.%s.%s}}", key, Namespace)
 	}
 	objectMeta.Labels = generateTemplateForLables(objectMeta.Labels)
 	return objectMeta
@@ -44,20 +40,20 @@ func generateTemplateForPodSpec(podSpec kapi.PodSpec, key string, value map[stri
 	podSpec.Containers = generateTemplateForContainer(podSpec.Containers, key, value)
 	//key = generateSafeKey(key)
 	if len(podSpec.Hostname) != 0 {
-		value["HostName"] = podSpec.Hostname
-		podSpec.Hostname = fmt.Sprintf("{{.Values.%s.HostName}}", key)
+		value[HostName] = podSpec.Hostname
+		podSpec.Hostname = fmt.Sprintf("{{.Values.%s.%s}}", key, HostName)
 	}
 	if len(podSpec.Subdomain) != 0 {
-		value["Subdomain"] = podSpec.Subdomain
-		podSpec.Subdomain = fmt.Sprintf("{{.Values.%s.Subdomain}}", key)
+		value[Subdomain] = podSpec.Subdomain
+		podSpec.Subdomain = fmt.Sprintf("{{.Values.%s.%s}}", key, Subdomain)
 	}
 	if len(podSpec.NodeName) != 0 {
-		value["Nodename"] = podSpec.NodeName
-		podSpec.NodeName = fmt.Sprintf("{{.Values.%s.Nodename}}", key)
+		value[Nodename] = podSpec.NodeName
+		podSpec.NodeName = fmt.Sprintf("{{.Values.%s.%s}}", key, Nodename)
 	}
 	if len(podSpec.ServiceAccountName) != 0 {
-		value["ServiceAccountName"] = podSpec.ServiceAccountName
-		podSpec.ServiceAccountName = fmt.Sprintf("{{.Values.%s.ServiceAccountName}}", key)
+		value[ServiceAccountName] = podSpec.ServiceAccountName
+		podSpec.ServiceAccountName = fmt.Sprintf("{{.Values.%s.%s}}", key, ServiceAccountName)
 	}
 	return podSpec
 }
@@ -70,7 +66,7 @@ func generateTemplateForVolume(volumes []kapi.Volume, key string, value map[stri
 	for _, volume := range volumes {
 		ifCondition = ""
 		volumeMap := make(map[string]interface{}, 0)
-		volumeMap["enabled"] = true
+		volumeMap[Enabled] = true
 		vol := []kapi.Volume{}
 		vol = append(vol, volume)
 		if volume.PersistentVolumeClaim != nil {
@@ -88,137 +84,137 @@ func generateTemplateForVolume(volumes []kapi.Volume, key string, value map[stri
 			} //TODO add items
 		} else if volume.Glusterfs != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
-			volumeMap["Path"] = volume.Glusterfs.Path
-			volumeMap["EndpointsName"] = volume.Glusterfs.EndpointsName
-			volume.Glusterfs.EndpointsName = VolumeTemplateForElement(volume.Name, "EndpointsName")
-			volume.Glusterfs.Path = VolumeTemplateForElement(volume.Name, "Path")
+			volumeMap[Path] = volume.Glusterfs.Path
+			volumeMap[EndpointsName] = volume.Glusterfs.EndpointsName
+			volume.Glusterfs.EndpointsName = VolumeTemplateForElement(volume.Name, EndpointsName)
+			volume.Glusterfs.Path = VolumeTemplateForElement(volume.Name, Path)
 			persistence[volume.Name] = volumeMap
 		} else if volume.HostPath != nil {
-			volumeMap["Path"] = volume.HostPath.Path
-			volume.HostPath.Path = VolumeTemplateForElement(volume.Name, "Path")
+			volumeMap[Path] = volume.HostPath.Path
+			volume.HostPath.Path = VolumeTemplateForElement(volume.Name, Path)
 			persistence[volume.Name] = volumeMap
 		} else if volume.GCEPersistentDisk != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
-			volumeMap["PDName"] = volume.GCEPersistentDisk.PDName
-			volumeMap["FSType"] = volume.GCEPersistentDisk.FSType
-			volume.GCEPersistentDisk.PDName = VolumeTemplateForElement(volume.Name, "PDName")
-			volume.GCEPersistentDisk.FSType = VolumeTemplateForElement(volume.Name, "FSType")
+			volumeMap[PDName] = volume.GCEPersistentDisk.PDName
+			volumeMap[FSType] = volume.GCEPersistentDisk.FSType
+			volume.GCEPersistentDisk.PDName = VolumeTemplateForElement(volume.Name, PDName)
+			volume.GCEPersistentDisk.FSType = VolumeTemplateForElement(volume.Name, FSType)
 			persistence[volume.Name] = volumeMap
 		} else if volume.AWSElasticBlockStore != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
-			volumeMap["FSType"] = volume.GCEPersistentDisk.FSType
-			volumeMap["VolumeID"] = volume.AWSElasticBlockStore.VolumeID
-			volume.AWSElasticBlockStore.VolumeID = VolumeTemplateForElement(volume.Name, "VolumeID")
-			volume.AWSElasticBlockStore.FSType = VolumeTemplateForElement(volume.Name, "FSType")
+			volumeMap[FSType] = volume.GCEPersistentDisk.FSType
+			volumeMap[VolumeID] = volume.AWSElasticBlockStore.VolumeID
+			volume.AWSElasticBlockStore.VolumeID = VolumeTemplateForElement(volume.Name, VolumeID)
+			volume.AWSElasticBlockStore.FSType = VolumeTemplateForElement(volume.Name, FSType)
 		} else if volume.GitRepo != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
-			volumeMap["Repository"] = volume.GitRepo.Repository
-			volumeMap["Revision"] = volume.GitRepo.Revision
-			volumeMap["Directory"] = volume.GitRepo.Directory
-			volume.GitRepo.Revision = VolumeTemplateForElement(volume.Name, "Revision")
-			volume.GitRepo.Repository = VolumeTemplateForElement(volume.Name, "Repository")
-			volume.GitRepo.Directory = VolumeTemplateForElement(volume.Name, "Directory")
+			volumeMap[Repository] = volume.GitRepo.Repository
+			volumeMap[Revision] = volume.GitRepo.Revision
+			volumeMap[Directory] = volume.GitRepo.Directory
+			volume.GitRepo.Revision = VolumeTemplateForElement(volume.Name, Revision)
+			volume.GitRepo.Repository = VolumeTemplateForElement(volume.Name, Repository)
+			volume.GitRepo.Directory = VolumeTemplateForElement(volume.Name, Directory)
 			persistence[volume.Name] = volumeMap
 		} else if volume.NFS != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
-			volumeMap["Server"] = volume.NFS.Server
-			volumeMap["Path"] = volume.NFS.Path
-			volume.NFS.Path = fmt.Sprintf(`{{.Values.%s.Path}}`, volume.Name)
-			volume.NFS.Server = fmt.Sprintf(`{{.Values.%s.Server}}`, volume.Name)
+			volumeMap[Server] = volume.NFS.Server
+			volumeMap[Path] = volume.NFS.Path
+			volume.NFS.Path = fmt.Sprintf(`{{.Values.%s.%s}}`, volume.Name, Path)
+			volume.NFS.Server = fmt.Sprintf(`{{.Values.%s.%s}}`, volume.Name, Server)
 			persistence[volume.Name] = volumeMap
 		} else if volume.ISCSI != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
-			volumeMap["TargetPortal"] = volume.ISCSI.TargetPortal
-			volumeMap["IQN"] = volume.ISCSI.IQN
-			volumeMap["ISCSIInterface"] = volume.ISCSI.ISCSIInterface
-			volumeMap["FSType"] = volume.ISCSI.FSType
-			volume.ISCSI.TargetPortal = VolumeTemplateForElement(volume.Name, "TargetPortal")
-			volume.ISCSI.IQN = VolumeTemplateForElement(volume.Name, "IQN")
-			volume.ISCSI.FSType = fmt.Sprintf(`{{.Values.%s.FSType}}`, volume.Name)
-			volume.ISCSI.ISCSIInterface = VolumeTemplateForElement(volume.Name, "ISCSIInterface")
+			volumeMap[TargetPortal] = volume.ISCSI.TargetPortal
+			volumeMap[IQN] = volume.ISCSI.IQN
+			volumeMap[ISCSIInterface] = volume.ISCSI.ISCSIInterface
+			volumeMap[FSType] = volume.ISCSI.FSType
+			volume.ISCSI.TargetPortal = VolumeTemplateForElement(volume.Name, TargetPortal)
+			volume.ISCSI.IQN = VolumeTemplateForElement(volume.Name, IQN)
+			volume.ISCSI.FSType = fmt.Sprintf(`{{.Values.%s.%s}}`, volume.Name, FSType)
+			volume.ISCSI.ISCSIInterface = VolumeTemplateForElement(volume.Name, ISCSIInterface)
 			persistence[volume.Name] = volumeMap
 		} else if volume.RBD != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
-			volumeMap["FSType"] = volume.RBD.FSType
-			volumeMap["RBDImage"] = volume.RBD.RBDImage
-			volumeMap["RBDPool"] = volume.RBD.RBDPool
-			volumeMap["RadosUser"] = volume.RBD.RadosUser
-			volumeMap["Keyring"] = volume.RBD.Keyring
-			volume.RBD.FSType = VolumeTemplateForElement(volume.Name, "FSType")
-			volume.RBD.RBDImage = VolumeTemplateForElement(volume.Name, "RBDImage")
-			volume.RBD.RBDPool = VolumeTemplateForElement(volume.Name, "RBDPool")
-			volume.RBD.RadosUser = VolumeTemplateForElement(volume.Name, "RadosUser")
-			volume.RBD.Keyring = VolumeTemplateForElement(volume.Name, "Keyring")
+			volumeMap[FSType] = volume.RBD.FSType
+			volumeMap[RBDImage] = volume.RBD.RBDImage
+			volumeMap[RBDPool] = volume.RBD.RBDPool
+			volumeMap[RadosUser] = volume.RBD.RadosUser
+			volumeMap[Keyring] = volume.RBD.Keyring
+			volume.RBD.FSType = VolumeTemplateForElement(volume.Name, FSType)
+			volume.RBD.RBDImage = VolumeTemplateForElement(volume.Name, RBDImage)
+			volume.RBD.RBDPool = VolumeTemplateForElement(volume.Name, RBDPool)
+			volume.RBD.RadosUser = VolumeTemplateForElement(volume.Name, RadosUser)
+			volume.RBD.Keyring = VolumeTemplateForElement(volume.Name, Keyring)
 			persistence[volume.Name] = volumeMap
 		} else if volume.Quobyte != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
-			volumeMap["Registry"] = volume.Quobyte.Registry
-			volumeMap["Volume"] = volume.Quobyte.Volume
-			volumeMap["Group"] = volume.Quobyte.Group
-			volumeMap["User"] = volume.Quobyte.User
-			volume.Quobyte.Registry = VolumeTemplateForElement(volume.Name, "Registry")
-			volume.Quobyte.Volume = VolumeTemplateForElement(volume.Name, "Volume")
-			volume.Quobyte.Group = VolumeTemplateForElement(volume.Name, "Group")
-			volume.Quobyte.User = VolumeTemplateForElement(volume.Name, "User")
+			volumeMap[Registry] = volume.Quobyte.Registry
+			volumeMap[Volume] = volume.Quobyte.Volume
+			volumeMap[Group] = volume.Quobyte.Group
+			volumeMap[User] = volume.Quobyte.User
+			volume.Quobyte.Registry = VolumeTemplateForElement(volume.Name, Registry)
+			volume.Quobyte.Volume = VolumeTemplateForElement(volume.Name, Volume)
+			volume.Quobyte.Group = VolumeTemplateForElement(volume.Name, Group)
+			volume.Quobyte.User = VolumeTemplateForElement(volume.Name, User)
 			persistence[volume.Name] = volumeMap
 		} else if volume.FlexVolume != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
 			volumeMap["Driver"] = volume.FlexVolume.Driver
-			volumeMap["FSType"] = volume.FlexVolume.FSType
+			volumeMap[FSType] = volume.FlexVolume.FSType
 			// TODO secret reference
 			volume.FlexVolume.Driver = VolumeTemplateForElement(volume.Name, "Driver")
-			volume.FlexVolume.FSType = VolumeTemplateForElement(volume.Name, "FSType")
+			volume.FlexVolume.FSType = VolumeTemplateForElement(volume.Name, FSType)
 			persistence[volume.Name] = volumeMap
 		} else if volume.Cinder != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
-			volumeMap["FSType"] = volume.Cinder.FSType
-			volumeMap["VolumeID"] = volume.Cinder.VolumeID
-			volume.Cinder.FSType = VolumeTemplateForElement(volume.Name, "FSType")
-			volume.Cinder.VolumeID = VolumeTemplateForElement(volume.Name, "VolumeID")
+			volumeMap[FSType] = volume.Cinder.FSType
+			volumeMap[VolumeID] = volume.Cinder.VolumeID
+			volume.Cinder.FSType = VolumeTemplateForElement(volume.Name, FSType)
+			volume.Cinder.VolumeID = VolumeTemplateForElement(volume.Name, VolumeID)
 			persistence[volume.Name] = volumeMap
 		} else if volume.CephFS != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
-			volumeMap["Path"] = volume.CephFS.Path
-			volumeMap["SecretFile"] = volume.CephFS.SecretFile
-			volumeMap["User"] = volume.CephFS.User
-			volume.CephFS.Path = VolumeTemplateForElement(volume.Name, "Path")
-			volume.CephFS.SecretFile = VolumeTemplateForElement(volume.Name, "SecretFile")
-			volume.CephFS.User = VolumeTemplateForElement(volume.Name, "User")
+			volumeMap[Path] = volume.CephFS.Path
+			volumeMap[SecretFile] = volume.CephFS.SecretFile
+			volumeMap[User] = volume.CephFS.User
+			volume.CephFS.Path = VolumeTemplateForElement(volume.Name, Path)
+			volume.CephFS.SecretFile = VolumeTemplateForElement(volume.Name, SecretFile)
+			volume.CephFS.User = VolumeTemplateForElement(volume.Name, User)
 			persistence[volume.Name] = volumeMap
 		} else if volume.Flocker != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
-			volumeMap["DatasetName"] = volume.Flocker.DatasetName
-			volume.Flocker.DatasetName = VolumeTemplateForElement(volume.Name, "DatasetName")
+			volumeMap[DatasetName] = volume.Flocker.DatasetName
+			volume.Flocker.DatasetName = VolumeTemplateForElement(volume.Name, DatasetName)
 			persistence[volume.Name] = volumeMap
 		} else if volume.DownwardAPI != nil {
 			//TODO
 		} else if volume.FC != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
-			volumeMap["FSType"] = volume.FC.FSType
-			volume.FC.FSType = VolumeTemplateForElement(volume.Name, "FSType")
+			volumeMap[FSType] = volume.FC.FSType
+			volume.FC.FSType = VolumeTemplateForElement(volume.Name, FSType)
 			persistence[volume.Name] = volumeMap
 		} else if volume.AzureFile != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
-			volumeMap["SecretName"] = volume.AzureFile.SecretName
-			volumeMap["ShareName"] = volume.AzureFile.ShareName
-			volume.AzureFile.ShareName = VolumeTemplateForElement(volume.Name, "ShareName")
-			volume.AzureFile.SecretName = VolumeTemplateForElement(volume.Name, "SecretName")
+			volumeMap[SecretName] = volume.AzureFile.SecretName
+			volumeMap[ShareName] = volume.AzureFile.ShareName
+			volume.AzureFile.ShareName = VolumeTemplateForElement(volume.Name, ShareName)
+			volume.AzureFile.SecretName = VolumeTemplateForElement(volume.Name, SecretName)
 			persistence[volume.Name] = volumeMap
 		} else if volume.AzureDisk != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
-			volumeMap["DiskName"] = volume.AzureDisk.DiskName
-			volumeMap["DataDiskURI"] = volume.AzureDisk.DataDiskURI
-			volumeMap["FSType"] = volume.AzureDisk.FSType
-			volume.AzureDisk.DiskName = VolumeTemplateForElement(volume.Name, "DiskName")
-			volume.AzureDisk.DataDiskURI = VolumeTemplateForElement(volume.Name, "DataDiskURI")
+			volumeMap[DiskName] = volume.AzureDisk.DiskName
+			volumeMap[DataDiskURI] = volume.AzureDisk.DataDiskURI
+			//volumeMap[FSType] = volume.AzureDisk.FSType
+			volume.AzureDisk.DiskName = VolumeTemplateForElement(volume.Name, DiskName)
+			volume.AzureDisk.DataDiskURI = VolumeTemplateForElement(volume.Name, DataDiskURI)
 			//volume.AzureDisk.FSType = *string(VolumeTemplateForElement(volume.Name, "FSType"))
 			persistence[volume.Name] = volumeMap
 		} else if volume.VsphereVolume != nil {
 			ifCondition = buildIfConditionForVolume(volume.Name)
-			volumeMap["FSType"] = volume.VsphereVolume.FSType
-			volumeMap["VolumePath"] = volume.VsphereVolume.VolumePath
-			volume.VsphereVolume.FSType = VolumeTemplateForElement(volume.Name, "FSType")
-			volume.VsphereVolume.VolumePath = VolumeTemplateForElement(volume.Name, "VolumePath")
+			volumeMap[FSType] = volume.VsphereVolume.FSType
+			volumeMap[VolumePath] = volume.VsphereVolume.VolumePath
+			volume.VsphereVolume.FSType = VolumeTemplateForElement(volume.Name, FSType)
+			volume.VsphereVolume.VolumePath = VolumeTemplateForElement(volume.Name, VolumePath)
 			persistence[volume.Name] = volumeMap
 		}
 		volumeData, err := yaml.Marshal(vol)
@@ -245,25 +241,29 @@ func generateTemplateForContainer(containers []kapi.Container, key string, value
 		containerName := generateSafeKey(container.Name)
 		container.Image = addTemplateImageValue(containerName, container.Image, key, containterValue)
 		if len(container.ImagePullPolicy) != 0 {
-			containterValue["imagePullPolicy"] = string(container.ImagePullPolicy)
-			container.ImagePullPolicy = kapi.PullPolicy(addContainerValue(key, containerName, "imagePullPolicy"))
+			containterValue[ImagePullPolicy] = string(container.ImagePullPolicy)
+			container.ImagePullPolicy = kapi.PullPolicy(addContainerValue(key, containerName, ImagePullPolicy))
 		}
 		if len(container.Env) != 0 {
 			for k, v := range container.Env {
+				envName := generateSafeKey(v.Name)
 				if len(v.Value) != 0 {
-					tmp := generateSafeKey(v.Name)
-					containterValue[tmp] = v.Value
-					//key := checkKeyValue(key)
-					container.Env[k].Value = fmt.Sprintf("{{.Values.%s.%s.%s}}", key, generateSafeKey(container.Name), tmp) //TODO test
+					containterValue[envName] = v.Value
 				}
-				// Secret of Configmap has to be deployed by chart. else value from wont work.
-				/*				if v.ValueFrom != nil {
-								if v.ValueFrom.ConfigMapKeyRef != nil {
-									container.Env[k].ValueFrom.ConfigMapKeyRef.Name = fmt.Sprintf(`{{ template "fullname" . }}-%s`, v.ValueFrom.ConfigMapKeyRef.Name)
-								} else if v.ValueFrom.SecretKeyRef != nil {
-									container.Env[k].ValueFrom.SecretKeyRef.Name = fmt.Sprintf(`{{ template "fullname" . }}-%s`, v.ValueFrom.SecretKeyRef.Name)
-								}
-							}*/
+				if v.ValueFrom != nil {
+					if v.ValueFrom.ConfigMapKeyRef != nil {
+						if checkIfNameExist(v.ValueFrom.ConfigMapKeyRef.Name, "Configmap") {
+							container.Env[k].ValueFrom.ConfigMapKeyRef.Name = fmt.Sprintf(`{{ template "fullname" . }}-%s`, v.ValueFrom.ConfigMapKeyRef.Name)
+							containterValue[envName] = v.ValueFrom.ConfigMapKeyRef.Key
+						}
+					} else if v.ValueFrom.SecretKeyRef != nil {
+						if checkIfNameExist(v.ValueFrom.SecretKeyRef.Name, "Secret") {
+							container.Env[k].ValueFrom.SecretKeyRef.Name = fmt.Sprintf(`{{ template "fullname" . }}-%s`, v.ValueFrom.SecretKeyRef.Name)
+							containterValue[envName] = v.ValueFrom.SecretKeyRef.Key
+						}
+					}
+				}
+				container.Env[k].Value = fmt.Sprintf("{{.Values.%s.%s.%s}}", key, generateSafeKey(container.Name), envName)
 			}
 		}
 		result[i] = container
@@ -272,7 +272,7 @@ func generateTemplateForContainer(containers []kapi.Container, key string, value
 	return result
 }
 
-func generateTemplateForLables(labels map[string]string) map[string]string { // Add levels needed for chart
+func generateTemplateForLables(labels map[string]string) map[string]string { // Add labels needed for chart
 	if labels == nil {
 		labels = make(map[string]string, 0)
 	}
@@ -309,7 +309,6 @@ func SaveChartfile(filename string, cf *chart.Metadata) error {
 }
 
 func addContainerValue(key string, s1 string, s2 string) string {
-	//key = checkKeyValue(key)
 	value := fmt.Sprintf("{{.Values.%s.%s.%s}}", key, s1, s2)
 	return value
 }
@@ -318,18 +317,17 @@ func addTemplateImageValue(containerName string, image string, key string, conta
 	img := strings.Split(image, ":")
 	imageName := ""
 	imageTag := "latest"
-	//key = checkKeyValue(key)
 	key = generateSafeKey(key)
-	imageNameTemplate := fmt.Sprintf("{{.Values.%s.%s.image}}", key, containerName)
-	imageTagTemplate := fmt.Sprintf("{{.Values.%s.%s.imageTag}}", key, containerName)
+	imageNameTemplate := fmt.Sprintf("{{.Values.%s.%s.%s}}", key, containerName, Image)
+	imageTagTemplate := fmt.Sprintf("{{.Values.%s.%s.%s}}", key, containerName, ImageTag)
 	if len(img) == 2 {
 		imageName = img[0]
 		imageTag = img[1]
 	} else {
 		imageName = img[0]
 	}
-	containerValue["image"] = imageName
-	containerValue["imageTag"] = imageTag
+	containerValue[Image] = imageName
+	containerValue[ImageTag] = imageTag
 	imageTemplate := fmt.Sprintf("%s:%s", imageNameTemplate, imageTagTemplate)
 	return imageTemplate
 }
@@ -506,37 +504,37 @@ func addVolumeInRcTemplate(rc string, volumes string) string {
 
 func generateServiceSpecTemplate(svc kapi.ServiceSpec, key string, value map[string]interface{}) kapi.ServiceSpec {
 	if len(svc.ClusterIP) != 0 {
-		value["ClusterIp"] = svc.ClusterIP
-		svc.ClusterIP = fmt.Sprintf("{{.Values.%s.ClusterIp}}", key)
+		value[ClusterIp] = svc.ClusterIP
+		svc.ClusterIP = fmt.Sprintf("{{.Values.%s.%s}}", key, ClusterIp)
 	}
 	if len(svc.ExternalName) != 0 {
-		value["ExternalName"] = svc.ExternalName
-		svc.ExternalName = fmt.Sprintf("{{.Values.%s.ExternalName}}", key)
+		value[ExternalName] = svc.ExternalName
+		svc.ExternalName = fmt.Sprintf("{{.Values.%s.%s}}", key, ExternalName)
 	}
 	if len(svc.LoadBalancerIP) != 0 {
-		value["LoadBalancer"] = svc.LoadBalancerIP
-		svc.LoadBalancerIP = fmt.Sprintf("{{.Values.%s.LoadBalancer}}", key)
+		value[LoadBalancer] = svc.LoadBalancerIP
+		svc.LoadBalancerIP = fmt.Sprintf("{{.Values.%s.%s}}", key, LoadBalancer)
 	}
 	if len(string(svc.Type)) != 0 {
-		value["ServiceType"] = string(svc.Type)
-		svc.Type = kapi.ServiceType(fmt.Sprintf("{{.Values.%s.ServiceType}}", key))
+		value[ServiceType] = string(svc.Type)
+		svc.Type = kapi.ServiceType(fmt.Sprintf("{{.Values.%s.%s}}", key, ServiceType))
 	}
 	if len(string(svc.SessionAffinity)) != 0 {
-		value["SessionAffinity"] = string(svc.SessionAffinity)
-		svc.SessionAffinity = kapi.ServiceAffinity(fmt.Sprintf("{{.Values.%s.SessionAffinity}}", key))
+		value[SessionAffinity] = string(svc.SessionAffinity)
+		svc.SessionAffinity = kapi.ServiceAffinity(fmt.Sprintf("{{.Values.%s.%s}}", key, SessionAffinity))
 	}
 	return svc
 }
 
 func generatePersistentVolumeClaimSpec(pvcspec kapi.PersistentVolumeClaimSpec, key string, value map[string]interface{}) kapi.PersistentVolumeClaimSpec {
 	if len(pvcspec.VolumeName) != 0 {
-		value["VolumeName"] = pvcspec.VolumeName
-		pvcspec.VolumeName = fmt.Sprintf("{{.Values.%s.VolumeName}}", key)
+		value[VolumeName] = pvcspec.VolumeName
+		pvcspec.VolumeName = fmt.Sprintf("{{.Values.%s.%s}}", key, VolumeName)
 	}
 	if len(pvcspec.AccessModes) != 0 {
-		value["AccessMode"] = pvcspec.AccessModes[0] //TODO sauman (multiple access mode)
+		value[AccessMode] = pvcspec.AccessModes[0] //TODO sauman (multiple access mode)
 		pvcspec.AccessModes = nil
-		pvcspec.AccessModes = append(pvcspec.AccessModes, kapi.PersistentVolumeAccessMode(fmt.Sprintf("{{.Values.%s.AccessMode}}", key)))
+		pvcspec.AccessModes = append(pvcspec.AccessModes, kapi.PersistentVolumeAccessMode(fmt.Sprintf("{{.Values.%s.%s}}", key, AccessMode)))
 	}
 	if pvcspec.Resources.Requests != nil {
 		//TODO sauman
@@ -548,9 +546,9 @@ func generatePersistentVolumeSpec(spec kapi.PersistentVolumeSpec, key string, va
 	value["ReclaimPolicy"] = spec.PersistentVolumeReclaimPolicy
 	spec.PersistentVolumeReclaimPolicy = kapi.PersistentVolumeReclaimPolicy(fmt.Sprintf("{{.Values.%s.ReclaimPolicy}}", key))
 	if len(spec.AccessModes) != 0 {
-		value["AccessMode"] = spec.AccessModes[0] //TODO sauman (multiple access mode)
+		value[AccessMode] = spec.AccessModes[0] //TODO sauman (multiple access mode)
 		spec.AccessModes = nil
-		spec.AccessModes = append(spec.AccessModes, kapi.PersistentVolumeAccessMode(fmt.Sprintf("{{.Values.%s.AccessMode}}", key)))
+		spec.AccessModes = append(spec.AccessModes, kapi.PersistentVolumeAccessMode(fmt.Sprintf("{{.Values.%s.%s}}", key, AccessMode)))
 	}
 	return spec
 }
@@ -573,7 +571,7 @@ func VolumeTemplateForElement(volumeName string, element string) string {
 }
 
 func buildIfConditionForVolume(volumeName string) string {
-	return fmt.Sprintf("{{- if .Values.persistence.%s.enabled}}", volumeName)
+	return fmt.Sprintf("{{- if .Values.persistence.%s.%s}}", volumeName, Enabled)
 }
 
 func checkIfNameExist(name string, objType string) bool {

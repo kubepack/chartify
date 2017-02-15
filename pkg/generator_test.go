@@ -108,7 +108,7 @@ func TestChartForJob(t *testing.T) {
 
 func TestChartCreatForDeployment(t *testing.T) {
 	fmt.Println("Testing for Deployment...\n")
-	yamlFile, err := ioutil.ReadFile("../testdata/yaml/deployment.yaml")
+	yamlFile, err := ioutil.ReadFile("../testdata/deployment/input/deployment.yaml")
 	assert.Nil(t, err)
 	deployment := ext.Deployment{}
 	err = yaml.Unmarshal(yamlFile, &deployment)
@@ -117,7 +117,7 @@ func TestChartCreatForDeployment(t *testing.T) {
 	cleanUpPodSpec(&deployment.Spec.Template.Spec)
 	cleanUpDecorators(deployment.ObjectMeta.Annotations)
 	template, _ := deploymentTemplate(deployment)
-	expectedTemplate, err := ioutil.ReadFile("../test/chart/deployment_chart.yaml")
+	expectedTemplate, err := ioutil.ReadFile("../testdata/deployment/output/deployment_chart.yaml")
 	assert.Nil(t, err)
 	assert.Equal(t, string(expectedTemplate), string(template))
 }
