@@ -281,6 +281,7 @@ func cleanUpObjectMeta(m *kapi.ObjectMeta) {
 }
 
 func cleanUpDecorators(m map[string]string) {
+	delete(m, "controller-uid" )
 	delete(m, "deployment.kubernetes.io/desired-replicas")
 	delete(m, "deployment.kubernetes.io/max-replicas")
 	delete(m, "deployment.kubernetes.io/revision")
