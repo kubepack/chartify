@@ -149,13 +149,7 @@ func (g Generator) Create() (string, error) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			cleanUpObjectMeta(&rcSet.ObjectMeta)
-			cleanUpPodSpec(&rcSet.Spec.Template.Spec)
-			cleanUpDecorators(rcSet.ObjectMeta.Annotations)
-			cleanUpDecorators(rcSet.ObjectMeta.Labels)
-			cleanUpDecorators(rcSet.Spec.Selector.MatchLabels)
-			cleanUpDecorators(rcSet.Spec.Template.ObjectMeta.Labels)
-
+			cleanupForReplicaSets(&rcSet)
 			name := rcSet.Name
 			templateName = filepath.Join(templateLocation, name+".rs.yaml")
 			template, values = replicaSetTemplate(rcSet)
@@ -219,12 +213,12 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&pvc.ObjectMeta)
+			cleanUpDecorators(pvc.ObjectMeta.Annotations)
 
 			name := pvc.Name
 			templateName = filepath.Join(templateLocation, name+".pvc.yaml")
 			template, values = pvcTemplate(pvc)
 			persistence = addPersistence(persistence, values.persistence)
-			//valueFile[removeCharactersFromName(name)] = values.value
 		} else if objMeta.Kind == "PersistentVolume" {
 			pv := kapi.PersistentVolume{}
 			err := json.Unmarshal(kubeJson, &pv)
@@ -291,6 +285,8 @@ func cleanUpDecorators(m map[string]string) {
 	delete(m, "deployment.kubernetes.io/max-replicas")
 	delete(m, "deployment.kubernetes.io/revision")
 	delete(m, "pod-template-hash")
+	delete(m, "pv.kubernetes.io/bind-completed")
+	delete(m, "pv.kubernetes.io/bound-by-controller")
 }
 
 func cleanUpPodSpec(p *kapi.PodSpec) {
@@ -359,7 +355,7 @@ func replicationControllerTemplate(rc kapi.ReplicationController) (string, value
 	tempRc := removeEmptyFields(string(tempRcByte))
 	template := ""
 	if len(volumes) != 0 {
-		template = addVolumeToTemplateForRc(tempRc, volumes)
+		template = addVolumeToTemplate(tempRc, volumes)
 	} else {
 		template = tempRc
 	}
@@ -378,11 +374,9 @@ func replicaSetTemplate(replicaSet kext.ReplicaSet) (string, valueFileGenerator)
 		value[Persistence] = true
 		replicaSet.Spec.Template.Spec.Volumes = nil
 	}
-
 	if replicaSet.Spec.Selector != nil {
 		modifyLabelSelector(replicaSet.Spec.Selector, replicaSet.Spec.Template.Labels, replicaSet.ObjectMeta.Labels)
 	}
-
 	template := ""
 	tempRcSetByte, err := ylib.Marshal(replicaSet)
 	if err != nil {
@@ -390,7 +384,7 @@ func replicaSetTemplate(replicaSet kext.ReplicaSet) (string, valueFileGenerator)
 	}
 	tempReplicaSet := removeEmptyFields(string(tempRcSetByte))
 	if len(volumes) != 0 {
-		template = addVolumeToTemplateForRc(tempReplicaSet, volumes) // RC and replica_set has volume in same layer
+		template = addVolumeToTemplate(tempReplicaSet, volumes) // RC and replica_set has volume in same layer
 	} else {
 		template = tempReplicaSet
 	}
@@ -432,7 +426,7 @@ func deploymentTemplate(deployment kext.Deployment) (string, valueFileGenerator)
 	tempDeployment := removeEmptyFields(string(tempDeploymentByte))
 
 	if len(volumes) != 0 {
-		template = addVolumeToTemplateForRc(tempDeployment, volumes)
+		template = addVolumeToTemplate(tempDeployment, volumes)
 	} else {
 		template = tempDeployment
 	}
@@ -465,7 +459,7 @@ func daemonsetTemplate(daemonset kext.DaemonSet) (string, valueFileGenerator) {
 	}
 	tempDaemonSet := removeEmptyFields(string(tempDaemonSetByte))
 	if len(volumes) != 0 {
-		template = addVolumeToTemplateForRc(tempDaemonSet, volumes)
+		template = addVolumeToTemplate(tempDaemonSet, volumes)
 	} else {
 		template = tempDaemonSet
 	}
@@ -486,6 +480,9 @@ func statefulsetTemplate(statefulset apps.StatefulSet) (string, valueFileGenerat
 		statefulset.Spec.ServiceName = fmt.Sprintf("{{.Values.%s.%s}}", key, ServiceName)
 	}
 	statefulset.Spec.Template.Spec = generateTemplateForPodSpec(statefulset.Spec.Template.Spec, key, value)
+	if statefulset.Spec.Selector != nil {
+		modifyLabelSelector(statefulset.Spec.Selector, statefulset.Spec.Template.Labels, statefulset.ObjectMeta.Labels)
+	}
 	if len(statefulset.Spec.Template.Spec.Volumes) != 0 {
 		volumes, persistence = generateTemplateForVolume(statefulset.Spec.Template.Spec.Volumes, key, value)
 		statefulset.Spec.Template.Spec.Volumes = nil
@@ -495,14 +492,9 @@ func statefulsetTemplate(statefulset apps.StatefulSet) (string, valueFileGenerat
 		log.Fatal(err)
 	}
 	tempStatefulSet := removeEmptyFields(string(tempStatefulSetByte))
-
-	if statefulset.Spec.Selector != nil {
-		modifyLabelSelector(statefulset.Spec.Selector, statefulset.Spec.Template.Labels, statefulset.ObjectMeta.Labels)
-	}
-
 	template := ""
 	if len(volumes) != 0 {
-		template = addVolumeToTemplateForRc(tempStatefulSet, volumes)
+		template = addVolumeToTemplate(tempStatefulSet, volumes)
 	} else {
 		template = tempStatefulSet
 	}
@@ -521,19 +513,17 @@ func jobTemplate(job batch.Job) (string, valueFileGenerator) {
 		value[Persistence] = true
 		job.Spec.Template.Spec.Volumes = nil
 	}
+	if job.Spec.Selector != nil {
+		modifyLabelSelector(job.Spec.Selector, job.Spec.Template.Labels, job.ObjectMeta.Labels)
+	}
 	tempJobByte, err := ylib.Marshal(job)
 	if err != nil {
 		log.Fatal(err)
 	}
 	tempJob := removeEmptyFields(string(tempJobByte))
 	template := ""
-
-	if job.Spec.Selector != nil {
-		modifyLabelSelector(job.Spec.Selector, job.Spec.Template.Labels, job.ObjectMeta.Labels)
-	}
-
 	if len(volumes) != 0 {
-		template = addVolumeToTemplateForRc(tempJob, volumes)
+		template = addVolumeToTemplate(tempJob, volumes)
 	} else {
 		template = tempJob
 	}
@@ -739,4 +729,30 @@ func modifyLabelSelector(selector *unversioned.LabelSelector, templateLabels map
 		templateLabels[k] = selector.MatchLabels[k]
 		metaLabels[k] = selector.MatchLabels[k]
 	}
+}
+
+func cleanupForReplicaSets(rcSet *kext.ReplicaSet) {
+	cleanUpObjectMeta(&rcSet.ObjectMeta)
+	cleanUpPodSpec(&rcSet.Spec.Template.Spec)
+	cleanUpDecorators(rcSet.ObjectMeta.Annotations)
+	cleanUpDecorators(rcSet.ObjectMeta.Labels)
+	cleanUpDecorators(rcSet.Spec.Selector.MatchLabels)
+	cleanUpDecorators(rcSet.Spec.Template.ObjectMeta.Labels)
+}
+
+func ReadLocalFiles(dirName string) []string {
+	var yamlFiles []string
+	files, err := ioutil.ReadDir(dirName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, f := range files {
+		fileDir := filepath.Join(dirName, f.Name())
+		dataByte, err := ioutil.ReadFile(fileDir)
+		if err != nil {
+			log.Fatal(err)
+		}
+		yamlFiles = append(yamlFiles, string(dataByte))
+	}
+	return yamlFiles
 }

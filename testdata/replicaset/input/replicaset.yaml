@@ -1,24 +1,19 @@
 apiVersion: extensions/v1beta1
 kind: ReplicaSet
 metadata:
-  creationTimestamp: 2017-02-14T11:14:33Z
+  creationTimestamp: 2017-02-20T05:18:39Z
   generation: 1
   labels:
     app: guestbook
     tier: frontend
   name: frontend
   namespace: default
-  resourceVersion: "18755041"
+  resourceVersion: "22549529"
   selfLink: /apis/extensions/v1beta1/namespaces/default/replicasets/frontend
-  uid: c33ecd96-f2a6-11e6-aee4-124f2ed5f410
+  uid: 09a447ec-f72c-11e6-aee4-124f2ed5f410
 spec:
   replicas: 3
   selector:
-    matchExpressions:
-    - key: tier
-      operator: In
-      values:
-      - frontend
     matchLabels:
       tier: frontend
   template:
@@ -50,4 +45,5 @@ spec:
 status:
   fullyLabeledReplicas: 3
   observedGeneration: 1
+  readyReplicas: 3
   replicas: 3

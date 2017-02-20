@@ -38,7 +38,6 @@ func generateObjectMetaTemplate(objectMeta kapi.ObjectMeta, key string, value ma
 
 func generateTemplateForPodSpec(podSpec kapi.PodSpec, key string, value map[string]interface{}) kapi.PodSpec {
 	podSpec.Containers = generateTemplateForContainer(podSpec.Containers, key, value)
-	//key = generateSafeKey(key)
 	if len(podSpec.Hostname) != 0 {
 		value[HostName] = podSpec.Hostname
 		podSpec.Hostname = fmt.Sprintf("{{.Values.%s.%s}}", key, HostName)
@@ -54,6 +53,10 @@ func generateTemplateForPodSpec(podSpec kapi.PodSpec, key string, value map[stri
 	if len(podSpec.ServiceAccountName) != 0 {
 		value[ServiceAccountName] = podSpec.ServiceAccountName
 		podSpec.ServiceAccountName = fmt.Sprintf("{{.Values.%s.%s}}", key, ServiceAccountName)
+	}
+	if len(string(podSpec.RestartPolicy)) != 0 {
+		value[RestartPolicy] = string(podSpec.RestartPolicy)
+		podSpec.RestartPolicy =kapi.RestartPolicy(fmt.Sprintf("{{.Values.%s.%s}}", key, RestartPolicy))
 	}
 	return podSpec
 }
@@ -479,7 +482,7 @@ func addVolumeInPodTemplate(pod string, volume string) string {
 	return templateForPod
 }
 
-func addVolumeToTemplateForRc(rc string, volumes string) string {
+func addVolumeToTemplate(rc string, volumes string) string {
 	volumes = makeSpaceForVolume(volumes, "      ")
 	template := addVolumeInRcTemplate(rc, volumes)
 	return template
@@ -543,8 +546,8 @@ func generatePersistentVolumeClaimSpec(pvcspec kapi.PersistentVolumeClaimSpec, k
 }
 
 func generatePersistentVolumeSpec(spec kapi.PersistentVolumeSpec, key string, value map[string]interface{}) kapi.PersistentVolumeSpec {
-	value["ReclaimPolicy"] = spec.PersistentVolumeReclaimPolicy
-	spec.PersistentVolumeReclaimPolicy = kapi.PersistentVolumeReclaimPolicy(fmt.Sprintf("{{.Values.%s.ReclaimPolicy}}", key))
+	value[ReclaimPolicy] = spec.PersistentVolumeReclaimPolicy
+	spec.PersistentVolumeReclaimPolicy = kapi.PersistentVolumeReclaimPolicy(fmt.Sprintf("{{.Values.%s.%s}}", key, ReclaimPolicy))
 	if len(spec.AccessModes) != 0 {
 		value[AccessMode] = spec.AccessModes[0] //TODO sauman (multiple access mode)
 		spec.AccessModes = nil

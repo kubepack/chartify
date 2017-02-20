@@ -1,5 +1,5 @@
-mypetset:
-  ServiceName: '{{.Values.mypetset.ServiceName}}'
+test:
   nginx:
     image: gcr.io/google_containers/nginx-slim
     imageTag: "0.8"
+  serviceName: nginx

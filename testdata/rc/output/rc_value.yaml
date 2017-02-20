@@ -1,6 +1,7 @@
 nginx:
-  Namespace: default
+  namespace: default
   nginx:
     image: nginx
     imagePullPolicy: Always
     imageTag: latest
+  restartPolicy: Always

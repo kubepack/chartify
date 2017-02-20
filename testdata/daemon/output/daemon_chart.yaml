@@ -2,22 +2,29 @@ apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
   labels:
-    app: datastore
+    app: '{{.Release.Name}}-datastore-shard'
     chart: '{{.Chart.Name}}-{{.Chart.Version}}'
     heritage: '{{.Release.Service}}'
     release: '{{.Release.Name}}'
-  name: '{{ template "fullname" . }}-datastore'
+  name: '{{ template "fullname" . }}-store-daemon'
+  namespace: '{{.Values.storedaemon.namespace}}'
 spec:
+  selector:
+    matchLabels:
+      app: '{{.Release.Name}}-datastore-shard'
   template:
     metadata:
       labels:
-        app: datastore-shard
+        app: '{{.Release.Name}}-datastore-shard'
     spec:
       containers:
-      - image: '{{.Values.datastore.datastoreshard.image}}:{{.Values.datastore.datastoreshard.imageTag}}'
+      - image: '{{.Values.storedaemon.datastoreshard.image}}:{{.Values.storedaemon.datastoreshard.imageTag}}'
+        imagePullPolicy: '{{.Values.storedaemon.datastoreshard.imagePullPolicy}}'
         name: datastore-shard
         ports:
         - containerPort: 9042
           name: main
+          protocol: TCP
       nodeSelector:
         app: datastore-node
+      restartPolicy: '{{.Values.storedaemon.restartPolicy}}'

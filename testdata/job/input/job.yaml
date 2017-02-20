@@ -1,14 +1,45 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
+  creationTimestamp: 2017-02-20T06:14:23Z
+  labels:
+    controller-uid: d2b46435-f733-11e6-aee4-124f2ed5f410
+    job-name: pi
   name: pi
+  namespace: default
+  resourceVersion: "22578774"
+  selfLink: /apis/extensions/v1beta1/namespaces/default/jobs/pi
+  uid: d2b46435-f733-11e6-aee4-124f2ed5f410
 spec:
+  autoSelector: true
+  completions: 1
+  parallelism: 1
+  selector:
+    matchLabels:
+      controller-uid: d2b46435-f733-11e6-aee4-124f2ed5f410
   template:
     metadata:
+      creationTimestamp: null
+      labels:
+        controller-uid: d2b46435-f733-11e6-aee4-124f2ed5f410
+        job-name: pi
       name: pi
     spec:
       containers:
-      - name: pi
+      - command:
+        - perl
+        - -Mbignum=bpi
+        - -wle
+        - print bpi(2000)
         image: perl
-        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+        imagePullPolicy: Always
+        name: pi
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+      dnsPolicy: ClusterFirst
       restartPolicy: Never
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  active: 1
+  startTime: 2017-02-20T06:14:23Z

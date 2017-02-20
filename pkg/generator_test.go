@@ -2,24 +2,23 @@ package pkg
 
 import (
 	"io/ioutil"
-	//"os"
-	//"path/filepath"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
-	"fmt"
 	"github.com/ghodss/yaml"
 	ylib "github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
 	kubeapi "k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/apis/apps"
 	"k8s.io/kubernetes/pkg/apis/batch"
 	ext "k8s.io/kubernetes/pkg/apis/extensions"
-	"strings"
+	"k8s.io/kubernetes/pkg/apis/storage"
 )
 
 func TestChartForPod(t *testing.T) {
-	fmt.Println("Testing for Pod...\n")
-	valueFile := make(map[string]interface{}, 0)
-	persistence := make(map[string]interface{}, 0)
+	var valueFile = make(map[string]interface{}, 0)
 	yamlFile, err := ioutil.ReadFile("../testdata/pod/input/pod.yaml")
 	assert.Nil(t, err)
 	pod := kubeapi.Pod{}
@@ -30,24 +29,18 @@ func TestChartForPod(t *testing.T) {
 	cleanUpPodSpec(&pod.Spec)
 	template, values := podTemplate(pod)
 	values.MergeInto(valueFile, generateSafeKey(name))
-	persistence = addPersistence(persistence, values.persistence)
 	expectedTemplate, err := ioutil.ReadFile("../testdata/pod/output/pod_chart.yaml")
 	assert.Nil(t, err)
 	expectedValues, err := ioutil.ReadFile("../testdata/pod/output/pod_value.yaml")
 	assert.Nil(t, err)
 	assert.Equal(t, string(expectedTemplate), string(template))
-	if len(persistence) != 0 {
-		valueFile["persistence"] = persistence
-	}
 	valueFileData, err := ylib.Marshal(valueFile)
 	assert.Nil(t, err)
 	assert.Equal(t, strings.TrimSpace(string(expectedValues)), strings.TrimSpace(string(valueFileData)))
 }
 
 func TestChartForRc(t *testing.T) {
-	valueFile := make(map[string]interface{}, 0)
-	persistence := make(map[string]interface{}, 0)
-	fmt.Println("Testing for replication controllers...\n")
+	var valueFile = make(map[string]interface{}, 0)
 	yamlFile, err := ioutil.ReadFile("../testdata/rc/input/rc.yaml")
 	assert.Nil(t, err)
 	rc := kubeapi.ReplicationController{}
@@ -58,41 +51,35 @@ func TestChartForRc(t *testing.T) {
 	name := rc.Name
 	template, values := replicationControllerTemplate(rc)
 	values.MergeInto(valueFile, generateSafeKey(name))
-	persistence = addPersistence(persistence, values.persistence)
 	expectedTemplate, err := ioutil.ReadFile("../testdata/rc/output/rc_chart.yaml")
 	assert.Nil(t, err)
-	assert.Equal(t, strings.TrimSpace(string(expectedTemplate)), strings.TrimSpace(string(template)))
 	assert.Equal(t, string(expectedTemplate), string(template))
 	expectedValues, err := ioutil.ReadFile("../testdata/rc/output/rc_value.yaml")
-	if len(persistence) != 0 {
-		valueFile["persistence"] = persistence
-	}
+	assert.Nil(t, err)
 	valueFileData, err := ylib.Marshal(valueFile)
 	assert.Nil(t, err)
-	assert.Equal(t, strings.TrimSpace(string(expectedValues)), strings.TrimSpace(string(valueFileData)))
+	assert.Equal(t, string(expectedValues), string(valueFileData))
 }
 
 func TestChartForReplicaSet(t *testing.T) {
-	fmt.Println("Testing for Replica sets...\n")
+	var valueFile = make(map[string]interface{}, 0)
 	yamlFile, err := ioutil.ReadFile("../testdata/replicaset/input/replicaset.yaml")
 	assert.Nil(t, err)
 	rcSet := ext.ReplicaSet{}
 	err = yaml.Unmarshal(yamlFile, &rcSet)
 	assert.Nil(t, err)
-	cleanUpObjectMeta(&rcSet.ObjectMeta)
-	cleanUpPodSpec(&rcSet.Spec.Template.Spec)
-	cleanUpDecorators(rcSet.ObjectMeta.Annotations)
-	cleanUpDecorators(rcSet.ObjectMeta.Labels)
-	cleanUpDecorators(rcSet.Spec.Selector.MatchLabels)
-	cleanUpDecorators(rcSet.Spec.Template.ObjectMeta.Labels)
-	template, _ := replicaSetTemplate(rcSet)
+	cleanupForReplicaSets(&rcSet)
+	name := rcSet.Name
+	template, values := replicaSetTemplate(rcSet)
+	values.MergeInto(valueFile, generateSafeKey(name))
 	expectedTemplate, err := ioutil.ReadFile("../testdata/replicaset/output/replicaset_chart.yaml")
 	assert.Nil(t, err)
 	assert.Equal(t, string(expectedTemplate), string(template))
+	valueChecker(t, "../testdata/replicaset/output/replicaset_value.yaml", valueFile)
 }
 
 func TestChartForJob(t *testing.T) {
-	fmt.Println("Testing for jobs...\n")
+	var valueFile = make(map[string]interface{}, 0)
 	yamlFile, err := ioutil.ReadFile("../testdata/job/input/job.yaml")
 	assert.Nil(t, err)
 	job := batch.Job{}
@@ -100,30 +87,16 @@ func TestChartForJob(t *testing.T) {
 	assert.Nil(t, err)
 	cleanUpObjectMeta(&job.ObjectMeta)
 	cleanUpPodSpec(&job.Spec.Template.Spec)
-	template, _ := jobTemplate(job)
+	template, values := jobTemplate(job)
+	name := job.Name
+	values.MergeInto(valueFile, generateSafeKey(name))
 	expectedTemplate, err := ioutil.ReadFile("../testdata/job/output/job_chart.yaml")
 	assert.Nil(t, err)
 	assert.Equal(t, string(expectedTemplate), string(template))
-}
-
-func TestChartCreatForDeployment(t *testing.T) {
-	fmt.Println("Testing for Deployment...\n")
-	yamlFile, err := ioutil.ReadFile("../testdata/deployment/input/deployment.yaml")
-	assert.Nil(t, err)
-	deployment := ext.Deployment{}
-	err = yaml.Unmarshal(yamlFile, &deployment)
-	assert.Nil(t, err)
-	cleanUpObjectMeta(&deployment.ObjectMeta)
-	cleanUpPodSpec(&deployment.Spec.Template.Spec)
-	cleanUpDecorators(deployment.ObjectMeta.Annotations)
-	template, _ := deploymentTemplate(deployment)
-	expectedTemplate, err := ioutil.ReadFile("../testdata/deployment/output/deployment_chart.yaml")
-	assert.Nil(t, err)
-	assert.Equal(t, string(expectedTemplate), string(template))
+	valueChecker(t, "../testdata/job/output/job_value.yaml", valueFile)
 }
 
 func TestChartForConfigMap(t *testing.T) {
-	fmt.Println("Testing for Configmaps...\n")
 	yamlFile, err := ioutil.ReadFile("../testdata/configmap/input/configmap.yaml")
 	assert.Nil(t, err)
 	configMap := kubeapi.ConfigMap{}
@@ -136,8 +109,8 @@ func TestChartForConfigMap(t *testing.T) {
 	assert.Equal(t, string(expectedTemplate), string(template))
 }
 
-func TestChartForDaemon(t *testing.T) {
-	fmt.Println("Testing for DaemonSets...\n")
+func TestChartForDaemonsets(t *testing.T) {
+	var valueFile = make(map[string]interface{}, 0)
 	yamlFile, err := ioutil.ReadFile("../testdata/daemon/input/daemon.yaml")
 	assert.Nil(t, err)
 	daemonset := ext.DaemonSet{}
@@ -145,71 +118,89 @@ func TestChartForDaemon(t *testing.T) {
 	assert.Nil(t, err)
 	cleanUpObjectMeta(&daemonset.ObjectMeta)
 	cleanUpPodSpec(&daemonset.Spec.Template.Spec)
-	template, _ := daemonsetTemplate(daemonset)
+	template, values := daemonsetTemplate(daemonset)
+	name := daemonset.Name
+	values.MergeInto(valueFile, generateSafeKey(name))
 	expectedTemplate, err := ioutil.ReadFile("../testdata/daemon/output/daemon_chart.yaml")
 	assert.Nil(t, err)
 	assert.Equal(t, string(expectedTemplate), string(template))
+	valueChecker(t, "../testdata/daemon/output/daemon_value.yaml", valueFile)
 }
 
 func TestChartForSecret(t *testing.T) {
-	fmt.Println("Testing for Secrets...\n")
+	var valueFile = make(map[string]interface{}, 0)
 	yamlFile, err := ioutil.ReadFile("../testdata/secret/input/secret.yaml")
 	assert.Nil(t, err)
 	secret := kubeapi.Secret{}
 	err = yaml.Unmarshal(yamlFile, &secret)
+	name := secret.Name
 	assert.Nil(t, err)
 	cleanUpObjectMeta(&secret.ObjectMeta)
-	template, _ := secretTemplate(secret)
-	fmt.Println(template, "\n\n")
+	template, values := secretTemplate(secret)
+	values.MergeInto(valueFile, generateSafeKey(name))
 	expectedTemplate, err := ioutil.ReadFile("../testdata/secret/output/secret_chart.yaml")
 	assert.Nil(t, err)
 	assert.Equal(t, string(expectedTemplate), string(template))
+	valueChecker(t, "../testdata/secret/output/secret_value.yaml", valueFile)
 }
 
 func TestChartForPv(t *testing.T) {
-	fmt.Println("Testing for persistent volumes...\n")
+	var valueFile = make(map[string]interface{}, 0)
 	yamlFile, err := ioutil.ReadFile("../testdata/pv/input/pv.yaml")
 	assert.Nil(t, err)
 	pv := kubeapi.PersistentVolume{}
 	err = yaml.Unmarshal(yamlFile, &pv)
 	assert.Nil(t, err)
+	name := pv.Name
 	cleanUpObjectMeta(&pv.ObjectMeta)
-	template, _ := pvTemplate(pv)
+	template, values := pvTemplate(pv)
+	values.MergeInto(valueFile, generateSafeKey(name))
 	expectedTemplate, err := ioutil.ReadFile("../testdata/pv/output/pv_chart.yaml")
 	assert.Nil(t, err)
 	assert.Equal(t, string(expectedTemplate), string(template))
+	valueChecker(t, "../testdata/pv/output/pv_value.yaml", valueFile)
 }
 
 func TestChartForService(t *testing.T) {
-	fmt.Println("Testing for Service...\n")
+	var valueFile = make(map[string]interface{}, 0)
 	yamlFile, err := ioutil.ReadFile("../testdata/service/input/service.yaml")
 	assert.Nil(t, err)
 	svc := kubeapi.Service{}
 	err = yaml.Unmarshal(yamlFile, &svc)
 	assert.Nil(t, err)
+	name := svc.Name
 	cleanUpObjectMeta(&svc.ObjectMeta)
-	template, _ := serviceTemplate(svc)
+	template, values := serviceTemplate(svc)
 	expectedTemplate, err := ioutil.ReadFile("../testdata/service/output/service_chart.yaml")
 	assert.Nil(t, err)
 	assert.Equal(t, string(expectedTemplate), string(template))
+	values.MergeInto(valueFile, generateSafeKey(name))
+	valueChecker(t, "../testdata/service/output/service_value.yaml", valueFile)
 }
 
 func TestChartForPvc(t *testing.T) {
-	fmt.Println("Testing PersistentVolumeClaim...\n")
+	var valueFile = make(map[string]interface{}, 0)
+	persistence := make(map[string]interface{}, 0)
 	yamlFile, err := ioutil.ReadFile("../testdata/pvc/input/pvc.yaml")
 	assert.Nil(t, err)
 	pvc := kubeapi.PersistentVolumeClaim{}
 	err = yaml.Unmarshal(yamlFile, &pvc)
 	assert.Nil(t, err)
 	cleanUpObjectMeta(&pvc.ObjectMeta)
-	template, _ := pvcTemplate(pvc)
+	cleanUpDecorators(pvc.ObjectMeta.Annotations)
+	template, values := pvcTemplate(pvc)
 	expectedTemplate, err := ioutil.ReadFile("../testdata/pvc/output/pvc_chart.yaml")
 	assert.Nil(t, err)
 	assert.Equal(t, string(expectedTemplate), string(template))
+	persistence = addPersistence(persistence, values.persistence)
+	if len(persistence) != 0 {
+		valueFile["persistence"] = persistence
+	}
+	valueChecker(t, "../testdata/pvc/output/pvc_value.yaml", valueFile)
 }
 
 func TestChartForDeployment(t *testing.T) {
-	fmt.Println("Testing Deployment...\n\n")
+	var valueFile = make(map[string]interface{}, 0)
 	yamlFile, err := ioutil.ReadFile("../testdata/deployment/input/deployment.yaml")
 	assert.Nil(t, err)
 	deployment := ext.Deployment{}
@@ -218,29 +209,77 @@ func TestChartForDeployment(t *testing.T) {
 	cleanUpObjectMeta(&deployment.ObjectMeta)
 	cleanUpPodSpec(&deployment.Spec.Template.Spec)
 	cleanUpDecorators(deployment.ObjectMeta.Annotations)
-	template, _ := deploymentTemplate(deployment)
+	name := deployment.Name
+	template, values := deploymentTemplate(deployment)
+	values.MergeInto(valueFile, generateSafeKey(name))
 	expectedTemplate, err := ioutil.ReadFile("../testdata/deployment/output/deployment_chart.yaml")
 	assert.Nil(t, err)
 	assert.Equal(t, string(expectedTemplate), string(template))
+	valueChecker(t, "../testdata/deployment/output/deployment_value.yaml", valueFile)
 }
 
-/*func TestChartForMultipleObject(t *testing.T) {
-	yamlFiles := readLocalFiles("../testdata/mix_objects/input")
+func TestChartForStorageClass(t *testing.T) {
+	var valueFile = make(map[string]interface{}, 0)
+	yamlFile, err := ioutil.ReadFile("../testdata/storageclass/input/storageclass.yaml")
+	assert.Nil(t, err)
+	storageclass := storage.StorageClass{}
+	err = yaml.Unmarshal(yamlFile, &storageclass)
+	assert.Nil(t, err)
+	cleanUpObjectMeta(&storageclass.ObjectMeta)
+	name := storageclass.Name
+	template, values := storageClassTemplate(storageclass)
+	values.MergeInto(valueFile, generateSafeKey(name))
+	expectedTemplate, err := ioutil.ReadFile("../testdata/storageclass/output/storageclass_chart.yaml")
+	assert.Nil(t, err)
+	assert.Equal(t, string(expectedTemplate), string(template))
+	valueChecker(t, "../testdata/storageclass/output/storageclass_value.yaml", valueFile)
+}
+
+func TestChartForStatefulsets(t *testing.T) {
+	var valueFile = make(map[string]interface{}, 0)
+	yamlFile, err := ioutil.ReadFile("../testdata/statefulset/input/statefulset.yaml")
+	assert.Nil(t, err)
+	statefulset := apps.StatefulSet{}
+	err = yaml.Unmarshal(yamlFile, &statefulset)
+	assert.Nil(t, err)
+	cleanUpObjectMeta(&statefulset.ObjectMeta)
+	cleanUpPodSpec(&statefulset.Spec.Template.Spec)
+	name := statefulset.Name
+	template, values := statefulsetTemplate(statefulset)
+	values.MergeInto(valueFile, generateSafeKey(name))
+	expectedTemplate, err := ioutil.ReadFile("../testdata/statefulset/output/statefulset_chart.yaml")
+	assert.Nil(t, err)
+	assert.Equal(t, string(expectedTemplate), string(template))
+	valueChecker(t, "../testdata/statefulset/output/statefulset_value.yaml", valueFile)
+}
+
+func TestChartForVolume(t *testing.T) {
+	yamlFiles := ReadLocalFiles("../testdata/mix_objects/check_volume/input")
 	tmp, err := ioutil.TempDir(os.TempDir(), "test")
+	defer os.Remove(tmp)
 	assert.Nil(t, err)
 	g := Generator{
 		ChartName: "test",
 		YamlFiles: yamlFiles,
 		Location:  tmp,
 	}
-	chdir, _ := g.Create()
-	files, err := ioutil.ReadDir("../testdata/mix_objects/output")
+	chdir, err := g.Create()
+	assert.Nil(t, err)
+	files, err := ioutil.ReadDir("../testdata/mix_objects/check_volume/output")
 	assert.Nil(t, err)
 	for _, v := range files {
 		acturalData, err := ioutil.ReadFile(filepath.Join(chdir, "templates", v.Name()))
 		assert.Nil(t, err)
-		expectedData, err := ioutil.ReadFile(filepath.Join("../testdata/mix_objects/output", v.Name()))
+		expectedData, err := ioutil.ReadFile(filepath.Join("../testdata/mix_objects/check_volume/output", v.Name()))
 		assert.Equal(t, string(expectedData), string(acturalData))
 	}
 	os.Remove(chdir)
-}*/
+}
+
+func valueChecker(t *testing.T, expectedPath string, valueFile map[string]interface{}) {
+	valuesInfo, err := ylib.Marshal(valueFile)
+	assert.Nil(t, err)
+	expectedValues, err := ioutil.ReadFile(expectedPath)
+	assert.Nil(t, err)
+	assert.Equal(t, string(expectedValues), string(valuesInfo))
+}

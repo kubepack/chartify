@@ -1,20 +1,42 @@
 apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
+  creationTimestamp: 2017-02-20T09:08:46Z
+  generation: 1
   labels:
     app: datastore
-  name: datastore
+  name: store-daemon
+  namespace: default
+  resourceVersion: "22669566"
+  selfLink: /apis/extensions/v1beta1/namespaces/default/daemonsets/store-daemon
+  uid: 2f360238-f74c-11e6-aee4-124f2ed5f410
 spec:
+  selector:
+    matchLabels:
+      app: datastore-shard
   template:
     metadata:
+      creationTimestamp: null
       labels:
         app: datastore-shard
     spec:
+      containers:
+      - image: kubernetes/sharded
+        imagePullPolicy: Always
+        name: datastore-shard
+        ports:
+        - containerPort: 9042
+          name: main
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+      dnsPolicy: ClusterFirst
       nodeSelector:
         app: datastore-node
-      containers:
-      - name: datastore-shard
-        image: kubernetes/sharded
-        ports:
-          - containerPort: 9042
-            name: main
+      restartPolicy: Always
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  currentNumberScheduled: 0
+  desiredNumberScheduled: 0
+  numberMisscheduled: 0

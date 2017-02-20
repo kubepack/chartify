@@ -1,7 +1,8 @@
 deploymentnginx:
-  DeploymentStrategy: RollingUpdate
-  Namespace: default
+  deploymentStrategy: RollingUpdate
+  namespace: default
   nginx:
     image: nginx
     imagePullPolicy: IfNotPresent
     imageTag: 1.7.9
+  restartPolicy: Always

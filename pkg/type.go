@@ -87,6 +87,8 @@ const (
 	ServiceName        = "serviceName"
 	Type               = "type"
 	Provisioner        = "provisioner"
+	RestartPolicy      = "restartPolicy"
+	ReclaimPolicy      = "reclaimPolicy"
 )
 
 func (v *valueFileGenerator) MergeInto(dst map[string]interface{}, key string) {

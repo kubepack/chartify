@@ -6,24 +6,19 @@ metadata:
     chart: '{{.Chart.Name}}-{{.Chart.Version}}'
     heritage: '{{.Release.Service}}'
     release: '{{.Release.Name}}'
-    tier: frontend
+    tier: '{{.Release.Name}}-frontend'
   name: '{{ template "fullname" . }}-frontend'
-  namespace: '{{.Values.frontend.Namespace}}'
+  namespace: '{{.Values.frontend.namespace}}'
 spec:
   replicas: 3
   selector:
-    matchExpressions:
-    - key: tier
-      operator: In
-      values:
-      - frontend
     matchLabels:
-      tier: frontend
+      tier: '{{.Release.Name}}-frontend'
   template:
     metadata:
       labels:
         app: guestbook
-        tier: frontend
+        tier: '{{.Release.Name}}-frontend'
     spec:
       containers:
       - env:
@@ -39,4 +34,4 @@ spec:
           requests:
             cpu: 100m
             memory: 100Mi
-      restartPolicy: Always
+      restartPolicy: '{{.Values.frontend.restartPolicy}}'

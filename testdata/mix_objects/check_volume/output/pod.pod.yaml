@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    kubernetes.io/limit-ranger: 'LimitRanger plugin set: cpu request for container
+      myfrontend'
+  labels:
+    chart: '{{.Chart.Name}}-{{.Chart.Version}}'
+    heritage: '{{.Release.Service}}'
+    release: '{{.Release.Name}}'
+  name: '{{ template "fullname" . }}-pod'
+  namespace: '{{.Values.pod.namespace}}'
+spec:
+  volumes:
+  {{- if .Values.persistence.pvc.enabled}}
+  - name: mypd
+    persistentVolumeClaim:
+      claimName: '{{template "fullname"}}-pvc'
+  {{- else }}
+    emptyDir: {}
+  {{- end }}
+  - name: default-token-16cwy
+    secret:
+      defaultMode: 420
+      secretName: default-token-16cwy
+  containers:
+  - image: '{{.Values.pod.myfrontend.image}}:{{.Values.pod.myfrontend.imageTag}}'
+    imagePullPolicy: '{{.Values.pod.myfrontend.imagePullPolicy}}'
+    name: myfrontend
+    resources:
+      requests:
+        cpu: 100m
+    volumeMounts:
+    - mountPath: /var/www/html
+      name: mypd
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-16cwy
+      readOnly: true
+  restartPolicy: '{{.Values.pod.restartPolicy}}'

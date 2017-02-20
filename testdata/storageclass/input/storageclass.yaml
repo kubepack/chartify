@@ -1,9 +1,13 @@
-kind: StorageClass
 apiVersion: storage.k8s.io/v1beta1
+kind: StorageClass
 metadata:
+  creationTimestamp: 2017-02-20T12:09:33Z
   name: teststrg
-provisioner: kubernetes.io/aws-ebs
+  resourceVersion: "22764243"
+  selfLink: /apis/storage.k8s.io/v1beta1/storageclasses/teststrg
+  uid: 705d5535-f765-11e6-aee4-124f2ed5f410
 parameters:
+  iopsPerGB: "10"
   type: io1
   zone: us-east-1d
-  iopsPerGB: "10"
+provisioner: kubernetes.io/aws-ebs

@@ -1,4 +1,7 @@
-datastore:
+storedaemon:
   datastoreshard:
     image: kubernetes/sharded
+    imagePullPolicy: Always
     imageTag: latest
+  namespace: default
+  restartPolicy: Always

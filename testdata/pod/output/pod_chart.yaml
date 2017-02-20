@@ -6,7 +6,7 @@ metadata:
     heritage: '{{.Release.Service}}'
     release: '{{.Release.Name}}'
   name: '{{ template "fullname" . }}-mypod'
-  namespace: '{{.Values.mypod.Namespace}}'
+  namespace: '{{.Values.mypod.namespace}}'
 spec:
   containers:
   - image: '{{.Values.mypod.mypod.image}}:{{.Values.mypod.mypod.imageTag}}'

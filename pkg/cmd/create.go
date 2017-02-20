@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -31,7 +30,7 @@ func NewCmdCreate() *cobra.Command {
 				ChartName: args[0],
 			}
 			if len(kubeDir) != 0 {
-				gen.YamlFiles = readLocalFiles(kubeDir)
+				gen.YamlFiles = pkg.ReadLocalFiles(kubeDir)
 			} else {
 				ok := ko.CheckFlags()
 				if !ok {
@@ -84,19 +83,3 @@ func checkLocation(location string) string {
 	return location
 }
 
-func readLocalFiles(dirName string) []string {
-	var yamlFiles []string
-	files, err := ioutil.ReadDir(dirName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, f := range files {
-		fileDir := filepath.Join(dirName, f.Name())
-		dataByte, err := ioutil.ReadFile(fileDir)
-		if err != nil {
-			log.Fatal(err)
-		}
-		yamlFiles = append(yamlFiles, string(dataByte))
-	}
-	return yamlFiles
-}

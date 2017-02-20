@@ -1,6 +1,6 @@
 mypod:
-  Namespace: default
   mypod:
     image: redis
     imagePullPolicy: Always
     imageTag: latest
+  namespace: default

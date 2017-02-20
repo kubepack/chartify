@@ -7,10 +7,12 @@ metadata:
     heritage: '{{.Release.Service}}'
     release: '{{.Release.Name}}'
   name: '{{ template "fullname" . }}-myclaim'
+  namespace: '{{.Values.persistence.myclaim.namespace}}'
 spec:
   accessModes:
-  - '{{.Values.persistence.myclaim.AccessMode}}'
+  - '{{.Values.persistence.myclaim.accessMode}}'
   resources:
     requests:
-      storage: 8Gi
+      storage: 5Gi
+  volumeName: '{{.Values.persistence.myclaim.volumeName}}'
 {{- end -}}

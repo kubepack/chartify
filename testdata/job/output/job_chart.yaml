@@ -3,12 +3,23 @@ kind: Job
 metadata:
   labels:
     chart: '{{.Chart.Name}}-{{.Chart.Version}}'
+    controller-uid: '{{.Release.Name}}-d2b46435-f733-11e6-aee4-124f2ed5f410'
     heritage: '{{.Release.Service}}'
+    job-name: pi
     release: '{{.Release.Name}}'
   name: '{{ template "fullname" . }}-pi'
+  namespace: '{{.Values.pi.namespace}}'
 spec:
+  completions: 1
+  parallelism: 1
+  selector:
+    matchLabels:
+      controller-uid: '{{.Release.Name}}-d2b46435-f733-11e6-aee4-124f2ed5f410'
   template:
     metadata:
+      labels:
+        controller-uid: '{{.Release.Name}}-d2b46435-f733-11e6-aee4-124f2ed5f410'
+        job-name: pi
       name: pi
     spec:
       containers:
@@ -18,5 +29,6 @@ spec:
         - -wle
         - print bpi(2000)
         image: '{{.Values.pi.pi.image}}:{{.Values.pi.pi.imageTag}}'
+        imagePullPolicy: '{{.Values.pi.pi.imagePullPolicy}}'
         name: pi
-      restartPolicy: Never
+      restartPolicy: '{{.Values.pi.restartPolicy}}'

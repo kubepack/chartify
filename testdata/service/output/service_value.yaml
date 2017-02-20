@@ -1,0 +1,5 @@
+myapp:
+  clusterIp: 10.0.82.240
+  namespace: default
+  serviceType: ClusterIP
+  sessionAffinity: None
