@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"log"
 
 	"github.com/appscode/chartify/pkg/cmd"
 	v "github.com/appscode/go/version"
@@ -49,10 +48,7 @@ func main() {
 	}
 	rootCmd.AddCommand(cmd.NewCmdCreate())
 	rootCmd.AddCommand(v.NewCmdVersion())
-	err := rootCmd.Execute()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatal(err)
 	}
-	os.Exit(0)
 }

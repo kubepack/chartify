@@ -69,10 +69,9 @@ func checkLocation(location string) string {
 	fi, err := os.Stat(location)
 	if err != nil {
 		if os.IsNotExist(err) {
-			err = os.Mkdir(location, 0755)
-		}
-		if err != nil {
-			log.Fatal(err)
+			if err := os.Mkdir(location, 0755); err != nil {
+				log.Fatal(err)
+			}
 		}
 	} else if !fi.IsDir() {
 		log.Fatalln(location, "is not a directory.")

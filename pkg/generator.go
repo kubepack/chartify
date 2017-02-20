@@ -58,8 +58,7 @@ func (g Generator) Create() (string, error) {
 		}
 
 		var objMeta unversioned.TypeMeta
-		err = json.Unmarshal(kubeJson, &objMeta)
-		if err != nil {
+		if err := json.Unmarshal(kubeJson, &objMeta); err != nil {
 			log.Fatal(err)
 		}
 
@@ -67,8 +66,7 @@ func (g Generator) Create() (string, error) {
 		var template, templateName string
 		if objMeta.Kind == "Pod" {
 			pod := kapi.Pod{}
-			err = json.Unmarshal(kubeJson, &pod)
-			if err != nil {
+			if err := json.Unmarshal(kubeJson, &pod); err != nil {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&pod.ObjectMeta)
@@ -81,8 +79,7 @@ func (g Generator) Create() (string, error) {
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "ReplicationController" {
 			rc := kapi.ReplicationController{}
-			err = json.Unmarshal(kubeJson, &rc)
-			if err != nil {
+			if err := json.Unmarshal(kubeJson, &rc); err != nil {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&rc.ObjectMeta)
@@ -95,8 +92,7 @@ func (g Generator) Create() (string, error) {
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "Deployment" {
 			deployment := kext.Deployment{}
-			err = json.Unmarshal(kubeJson, &deployment)
-			if err != nil {
+			if err := json.Unmarshal(kubeJson, &deployment); err != nil {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&deployment.ObjectMeta)
@@ -105,16 +101,12 @@ func (g Generator) Create() (string, error) {
 
 			name := deployment.Name
 			templateName = filepath.Join(templateLocation, name+".deployment.yaml")
-			if err != nil {
-				log.Fatal(err)
-			}
 			template, values = deploymentTemplate(deployment)
 			values.MergeInto(valueFile, generateSafeKey(name))
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "Job" {
 			job := batch.Job{}
-			err = json.Unmarshal(kubeJson, &job)
-			if err != nil {
+			if err := json.Unmarshal(kubeJson, &job); err != nil {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&job.ObjectMeta)
@@ -127,8 +119,7 @@ func (g Generator) Create() (string, error) {
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "DaemonSet" {
 			daemonset := kext.DaemonSet{}
-			err = json.Unmarshal(kubeJson, &daemonset)
-			if err != nil {
+			if err := json.Unmarshal(kubeJson, &daemonset); err != nil {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&daemonset.ObjectMeta)
@@ -141,8 +132,7 @@ func (g Generator) Create() (string, error) {
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "ReplicaSet" {
 			rcSet := kext.ReplicaSet{}
-			err = json.Unmarshal(kubeJson, &rcSet)
-			if err != nil {
+			if err := json.Unmarshal(kubeJson, &rcSet); err != nil {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&rcSet.ObjectMeta)
@@ -159,8 +149,7 @@ func (g Generator) Create() (string, error) {
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "StatefulSet" {
 			statefulset := apps.StatefulSet{}
-			err := json.Unmarshal(kubeJson, &statefulset)
-			if err != nil {
+			if err := json.Unmarshal(kubeJson, &statefulset); err != nil {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&statefulset.ObjectMeta)
@@ -173,8 +162,7 @@ func (g Generator) Create() (string, error) {
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "Service" {
 			service := kapi.Service{}
-			err := json.Unmarshal(kubeJson, &service)
-			if err != nil {
+			if err := json.Unmarshal(kubeJson, &service); err != nil {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&service.ObjectMeta)
@@ -186,8 +174,7 @@ func (g Generator) Create() (string, error) {
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "ConfigMap" {
 			configMap := kapi.ConfigMap{}
-			err := json.Unmarshal(kubeJson, &configMap)
-			if err != nil {
+			if err := json.Unmarshal(kubeJson, &configMap); err != nil {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&configMap.ObjectMeta)
@@ -198,8 +185,7 @@ func (g Generator) Create() (string, error) {
 			values.MergeInto(valueFile, generateSafeKey(name))
 		} else if objMeta.Kind == "Secret" {
 			secret := kapi.Secret{}
-			err := json.Unmarshal(kubeJson, &secret)
-			if err != nil {
+			if err := json.Unmarshal(kubeJson, &secret); err != nil {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&secret.ObjectMeta)
@@ -210,8 +196,7 @@ func (g Generator) Create() (string, error) {
 			values.MergeInto(valueFile, generateSafeKey(name))
 		} else if objMeta.Kind == "PersistentVolumeClaim" {
 			pvc := kapi.PersistentVolumeClaim{}
-			err := json.Unmarshal(kubeJson, &pvc)
-			if err != nil {
+			if err := json.Unmarshal(kubeJson, &pvc); err != nil {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&pvc.ObjectMeta)
@@ -223,8 +208,7 @@ func (g Generator) Create() (string, error) {
 			//valueFile[removeCharactersFromName(name)] = values.value
 		} else if objMeta.Kind == "PersistentVolume" {
 			pv := kapi.PersistentVolume{}
-			err := json.Unmarshal(kubeJson, &pv)
-			if err != nil {
+			if err := json.Unmarshal(kubeJson, &pv); err != nil {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&pv.ObjectMeta)
@@ -235,8 +219,7 @@ func (g Generator) Create() (string, error) {
 			values.MergeInto(valueFile, generateSafeKey(name))
 		} else if objMeta.Kind == "StorageClass" {
 			storageClass := storage.StorageClass{}
-			err := json.Unmarshal(kubeJson, &storageClass)
-			if err != nil {
+			if err := json.Unmarshal(kubeJson, &storageClass); err != nil {
 				log.Fatal(err)
 			}
 			cleanUpObjectMeta(&storageClass.ObjectMeta)
@@ -248,8 +231,7 @@ func (g Generator) Create() (string, error) {
 		} else {
 			fmt.Printf("%v is not supported. Please add manually. Consider filing bug here: https://github.com/appscode/chartify/issues", objMeta.Kind)
 		}
-		err = ioutil.WriteFile(templateName, []byte(template), 0644)
-		if err != nil {
+		if err := ioutil.WriteFile(templateName, []byte(template), 0644); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -261,10 +243,13 @@ func (g Generator) Create() (string, error) {
 		log.Fatal(err)
 	}
 	helperDir := filepath.Join(templateLocation, HelpersName)
-	err = ioutil.WriteFile(helperDir, []byte(defaultHelpers), 0644) //TODO  change default values
+
+	//TODO  change default values;
+	if err := ioutil.WriteFile(helperDir, []byte(defaultHelpers), 0644); err != nil {
+		log.Fatal(err)
+	}
 	valueDir := filepath.Join(cdir, ValuesfileName)
-	err = ioutil.WriteFile(valueDir, []byte(valueFileData), 0644)
-	if err != nil {
+	if err := ioutil.WriteFile(valueDir, []byte(valueFileData), 0644); err != nil {
 		log.Fatal(err)
 	}
 
@@ -449,9 +434,6 @@ func daemonsetTemplate(daemonset kext.DaemonSet) (string, valueFileGenerator) {
 		template = addVolumeToTemplateForRc(tempDaemonSet, volumes)
 	} else {
 		template = tempDaemonSet
-	}
-	if err != nil {
-		log.Fatal(err)
 	}
 	return template, valueFileGenerator{value: value, persistence: persistence}
 }
