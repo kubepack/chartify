@@ -446,7 +446,7 @@ func appendSlice(mainSlice []string, subSlice []string) []string {
 }
 
 func splitNamespace(s string) (string, string) {
-	str := strings.Split(s, ".")
+	str := strings.Split(s, "@")
 	if len(str) == 2 {
 		return str[0], str[1]
 	} else if len(str) == 1 {
