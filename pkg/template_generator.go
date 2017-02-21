@@ -363,12 +363,10 @@ func omitEmptyMap(mp map[string]interface{}, k string, v interface{}) {
 	} else if !reflect.ValueOf(v).IsValid() {
 		delete(mp, k)
 	} else if reflect.ValueOf(v).Kind() == reflect.Map || reflect.ValueOf(v).Kind() == reflect.Struct {
-
 		data, err := json.Marshal(reflect.ValueOf(v).Interface())
 		if err == nil {
 			var newMap map[string]interface{}
-			err = json.Unmarshal(data, &newMap)
-			if err != nil {
+			if err := json.Unmarshal(data, &newMap); err != nil {
 				log.Fatal(err)
 			}
 			for k1, v1 := range newMap {
@@ -393,19 +391,17 @@ func omitEmptySlice(i []interface{}) []interface{} {
 
 		} else if reflect.ValueOf(v).Kind() == reflect.Map || reflect.ValueOf(v).Kind() == reflect.Struct {
 			data, err := json.Marshal(reflect.ValueOf(v).Interface())
-			if err == nil {
-				var newMap map[string]interface{}
-				err = json.Unmarshal(data, &newMap)
-				if err != nil {
-					log.Fatal(err)
-				}
-				for k1, v1 := range newMap {
-					omitEmptyMap(newMap, k1, v1)
-				}
-				z = append(z, newMap)
-			} else {
+			if err != nil {
 				log.Fatal(err)
 			}
+			var newMap map[string]interface{}
+			if err := json.Unmarshal(data, &newMap); err != nil {
+				log.Fatal(err)
+			}
+			for k1, v1 := range newMap {
+				omitEmptyMap(newMap, k1, v1)
+			}
+			z = append(z, newMap)
 		} else if reflect.ValueOf(v).Kind() == reflect.Slice {
 			v1 := omitEmptySlice(InterfaceToSlice(v))
 			z = append(z, v1)
