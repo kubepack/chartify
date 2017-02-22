@@ -1,6 +1,5 @@
-persistence:
-  myclaim:
-    accessMode: ReadWriteOnce
-    enabled: true
-    namespace: default
-    volumeName: pv-test
+myclaim:
+  accessMode: ReadWriteOnce
+  enabled: true
+  namespace: default
+  volumeName: pv-test

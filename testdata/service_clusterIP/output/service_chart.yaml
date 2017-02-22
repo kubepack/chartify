@@ -8,6 +8,7 @@ metadata:
   name: '{{ template "fullname" . }}-myapp'
   namespace: '{{.Values.myapp.namespace}}'
 spec:
+  clusterIP: '{{.Values.myapp.clusterIP}}'
   ports:
   - port: 8765
     protocol: TCP

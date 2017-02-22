@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
 
@@ -73,9 +74,6 @@ func (g Generator) Create() (string, error) {
 			if err := json.Unmarshal(kubeJson, &pod); err != nil {
 				log.Fatal(err)
 			}
-			cleanUpObjectMeta(&pod.ObjectMeta)
-			cleanUpPodSpec(&pod.Spec)
-
 			name := pod.Name
 			templateName = filepath.Join(templateLocation, name+".pod.yaml")
 			template, values = podTemplate(pod)
@@ -86,9 +84,6 @@ func (g Generator) Create() (string, error) {
 			if err := json.Unmarshal(kubeJson, &rc); err != nil {
 				log.Fatal(err)
 			}
-			cleanUpObjectMeta(&rc.ObjectMeta)
-			cleanUpPodSpec(&rc.Spec.Template.Spec)
-
 			name := rc.Name
 			templateName = filepath.Join(templateLocation, name+".rc.yaml")
 			template, values = replicationControllerTemplate(rc)
@@ -99,10 +94,6 @@ func (g Generator) Create() (string, error) {
 			if err := json.Unmarshal(kubeJson, &deployment); err != nil {
 				log.Fatal(err)
 			}
-			cleanUpObjectMeta(&deployment.ObjectMeta)
-			cleanUpPodSpec(&deployment.Spec.Template.Spec)
-			cleanUpDecorators(deployment.ObjectMeta.Annotations)
-
 			name := deployment.Name
 			templateName = filepath.Join(templateLocation, name+".deployment.yaml")
 			template, values = deploymentTemplate(deployment)
@@ -113,9 +104,6 @@ func (g Generator) Create() (string, error) {
 			if err := json.Unmarshal(kubeJson, &job); err != nil {
 				log.Fatal(err)
 			}
-			cleanUpObjectMeta(&job.ObjectMeta)
-			cleanUpPodSpec(&job.Spec.Template.Spec)
-
 			name := job.Name
 			templateName = filepath.Join(templateLocation, name+".job.yaml")
 			template, values = jobTemplate(job)
@@ -126,9 +114,6 @@ func (g Generator) Create() (string, error) {
 			if err := json.Unmarshal(kubeJson, &daemonset); err != nil {
 				log.Fatal(err)
 			}
-			cleanUpObjectMeta(&daemonset.ObjectMeta)
-			cleanUpPodSpec(&daemonset.Spec.Template.Spec)
-
 			name := daemonset.Name
 			templateName = filepath.Join(templateLocation, name+".daemonset.yaml")
 			template, values = daemonsetTemplate(daemonset)
@@ -139,7 +124,6 @@ func (g Generator) Create() (string, error) {
 			if err := json.Unmarshal(kubeJson, &rcSet); err != nil {
 				log.Fatal(err)
 			}
-			cleanupForReplicaSets(&rcSet)
 			name := rcSet.Name
 			templateName = filepath.Join(templateLocation, name+".rs.yaml")
 			template, values = replicaSetTemplate(rcSet)
@@ -150,9 +134,6 @@ func (g Generator) Create() (string, error) {
 			if err := json.Unmarshal(kubeJson, &statefulset); err != nil {
 				log.Fatal(err)
 			}
-			cleanUpObjectMeta(&statefulset.ObjectMeta)
-			cleanUpPodSpec(&statefulset.Spec.Template.Spec)
-
 			name := statefulset.Name
 			templateName = filepath.Join(templateLocation, name+".statefulset.yaml")
 			template, values = statefulsetTemplate(statefulset)
@@ -163,8 +144,6 @@ func (g Generator) Create() (string, error) {
 			if err := json.Unmarshal(kubeJson, &service); err != nil {
 				log.Fatal(err)
 			}
-			cleanUpObjectMeta(&service.ObjectMeta)
-
 			template, values = serviceTemplate(service)
 			name := service.Name
 			templateName = filepath.Join(templateLocation, name+".svc.yaml")
@@ -175,8 +154,6 @@ func (g Generator) Create() (string, error) {
 			if err := json.Unmarshal(kubeJson, &configMap); err != nil {
 				log.Fatal(err)
 			}
-			cleanUpObjectMeta(&configMap.ObjectMeta)
-
 			name := configMap.Name
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = configMapTemplate(configMap)
@@ -186,8 +163,6 @@ func (g Generator) Create() (string, error) {
 			if err := json.Unmarshal(kubeJson, &secret); err != nil {
 				log.Fatal(err)
 			}
-			cleanUpObjectMeta(&secret.ObjectMeta)
-
 			name := secret.Name
 			templateName = filepath.Join(templateLocation, name+".secret.yaml")
 			template, values = secretTemplate(secret)
@@ -197,9 +172,6 @@ func (g Generator) Create() (string, error) {
 			if err := json.Unmarshal(kubeJson, &pvc); err != nil {
 				log.Fatal(err)
 			}
-			cleanUpObjectMeta(&pvc.ObjectMeta)
-			cleanUpDecorators(pvc.ObjectMeta.Annotations)
-
 			name := pvc.Name
 			templateName = filepath.Join(templateLocation, name+".pvc.yaml")
 			template, values = pvcTemplate(pvc)
@@ -209,8 +181,6 @@ func (g Generator) Create() (string, error) {
 			if err := json.Unmarshal(kubeJson, &pv); err != nil {
 				log.Fatal(err)
 			}
-			cleanUpObjectMeta(&pv.ObjectMeta)
-
 			name := pv.Name
 			templateName = filepath.Join(templateLocation, name+".pv.yaml")
 			template, values = pvTemplate(pv)
@@ -220,8 +190,6 @@ func (g Generator) Create() (string, error) {
 			if err := json.Unmarshal(kubeJson, &storageClass); err != nil {
 				log.Fatal(err)
 			}
-			cleanUpObjectMeta(&storageClass.ObjectMeta)
-
 			name := storageClass.Name
 			templateName = filepath.Join(templateLocation, name+".storage.yaml")
 			template, values = storageClassTemplate(storageClass)
@@ -291,12 +259,13 @@ func cleanUpPodSpec(p *kapi.PodSpec) {
 }
 
 func podTemplate(pod kapi.Pod) (string, valueFileGenerator) {
+	cleanUpObjectMeta(&pod.ObjectMeta)
+	cleanUpPodSpec(&pod.Spec)
 	volumes := ""
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
 	key := generateSafeKey(pod.ObjectMeta.Name)
 	pod.ObjectMeta = generateObjectMetaTemplate(pod.ObjectMeta, key, value, pod.ObjectMeta.Name)
-	//pod.Spec.Containers = generateTemplateForContainer(pod.Spec.Containers, value)
 	pod.Spec = generateTemplateForPodSpec(pod.Spec, key, value)
 	if len(pod.Spec.Volumes) != 0 {
 		volumes, persistence = generateTemplateForVolume(pod.Spec.Volumes, key, value)
@@ -321,6 +290,8 @@ func podTemplate(pod kapi.Pod) (string, valueFileGenerator) {
 }
 
 func replicationControllerTemplate(rc kapi.ReplicationController) (string, valueFileGenerator) {
+	cleanUpObjectMeta(&rc.ObjectMeta)
+	cleanUpPodSpec(&rc.Spec.Template.Spec)
 	volumes := ""
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
@@ -347,6 +318,7 @@ func replicationControllerTemplate(rc kapi.ReplicationController) (string, value
 }
 
 func replicaSetTemplate(replicaSet kext.ReplicaSet) (string, valueFileGenerator) {
+	cleanupForReplicaSets(&replicaSet)
 	volumes := ""
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
@@ -379,6 +351,9 @@ func replicaSetTemplate(replicaSet kext.ReplicaSet) (string, valueFileGenerator)
 }
 
 func deploymentTemplate(deployment kext.Deployment) (string, valueFileGenerator) {
+	cleanUpObjectMeta(&deployment.ObjectMeta)
+	cleanUpPodSpec(&deployment.Spec.Template.Spec)
+	cleanUpDecorators(deployment.ObjectMeta.Annotations)
 	volumes := ""
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
@@ -389,9 +364,8 @@ func deploymentTemplate(deployment kext.Deployment) (string, valueFileGenerator)
 		volumes, persistence = generateTemplateForVolume(deployment.Spec.Template.Spec.Volumes, key, value)
 		deployment.Spec.Template.Spec.Volumes = nil
 	}
-	if len(string(deployment.Spec.Strategy.Type)) != 0 {
 
-		//generateTemplateForSingleValue(string(deployment.Spec.Strategy.Type), "DeploymentStrategy", value)
+	if len(string(deployment.Spec.Strategy.Type)) != 0 {
 		if len(string(deployment.Spec.Strategy.Type)) != 0 {
 			value[DeploymentStrategy] = deployment.Spec.Strategy.Type
 			deployment.Spec.Strategy.Type = kext.DeploymentStrategyType(fmt.Sprintf("{{.Values.%s.%s}}", key, DeploymentStrategy))
@@ -418,6 +392,8 @@ func deploymentTemplate(deployment kext.Deployment) (string, valueFileGenerator)
 }
 
 func daemonsetTemplate(daemonset kext.DaemonSet) (string, valueFileGenerator) {
+	cleanUpObjectMeta(&daemonset.ObjectMeta)
+	cleanUpPodSpec(&daemonset.Spec.Template.Spec)
 	volumes := ""
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
@@ -435,8 +411,6 @@ func daemonsetTemplate(daemonset kext.DaemonSet) (string, valueFileGenerator) {
 	}
 
 	template := ""
-	//valueData, err := ylib.Marshal(value)
-
 	tempDaemonSetByte, err := ylib.Marshal(daemonset)
 	if err != nil {
 		log.Fatal(err)
@@ -451,6 +425,8 @@ func daemonsetTemplate(daemonset kext.DaemonSet) (string, valueFileGenerator) {
 }
 
 func statefulsetTemplate(statefulset apps.StatefulSet) (string, valueFileGenerator) {
+	cleanUpObjectMeta(&statefulset.ObjectMeta)
+	cleanUpPodSpec(&statefulset.Spec.Template.Spec)
 	volumes := ""
 	value := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
@@ -483,6 +459,11 @@ func statefulsetTemplate(statefulset apps.StatefulSet) (string, valueFileGenerat
 }
 
 func jobTemplate(job batch.Job) (string, valueFileGenerator) {
+	cleanUpObjectMeta(&job.ObjectMeta)
+	cleanUpPodSpec(&job.Spec.Template.Spec)
+	cleanUpDecorators(job.ObjectMeta.Labels)
+	cleanUpDecorators(job.Spec.Template.Labels)
+	cleanUpDecorators(job.Spec.Selector.MatchLabels)
 	volumes := ""
 	persistence := make(map[string]interface{}, 0)
 	value := make(map[string]interface{}, 0)
@@ -513,9 +494,14 @@ func jobTemplate(job batch.Job) (string, valueFileGenerator) {
 }
 
 func serviceTemplate(svc kapi.Service) (string, valueFileGenerator) {
+	cleanUpObjectMeta(&svc.ObjectMeta)
 	value := make(map[string]interface{}, 0)
 	key := generateSafeKey(svc.ObjectMeta.Name)
 	svc.ObjectMeta = generateObjectMetaTemplate(svc.ObjectMeta, key, value, svc.ObjectMeta.Name)
+	ip := net.ParseIP(svc.Spec.ClusterIP)
+	if ip != nil {
+		svc.Spec.ClusterIP = ""
+	}
 	svc.Spec = generateServiceSpecTemplate(svc.Spec, key, value)
 	svcData, err := ylib.Marshal(svc)
 	if err != nil {
@@ -526,10 +512,10 @@ func serviceTemplate(svc kapi.Service) (string, valueFileGenerator) {
 }
 
 func configMapTemplate(configMap kapi.ConfigMap) (string, valueFileGenerator) {
+	cleanUpObjectMeta(&configMap.ObjectMeta)
 	value := make(map[string]interface{}, 0)
 	key := generateSafeKey(configMap.ObjectMeta.Name)
 	configMap.ObjectMeta = generateObjectMetaTemplate(configMap.ObjectMeta, key, value, configMap.ObjectMeta.Name)
-	//configMap.ObjectMeta.Name = key  // TODO use release
 	configMapData, err := ylib.Marshal(configMap)
 	if err != nil {
 		log.Fatal(err)
@@ -545,11 +531,11 @@ func configMapTemplate(configMap kapi.ConfigMap) (string, valueFileGenerator) {
 }
 
 func secretTemplate(secret kapi.Secret) (string, valueFileGenerator) {
+	cleanUpObjectMeta(&secret.ObjectMeta)
 	value := make(map[string]interface{}, 0)
 	secretDataMap := make(map[string]interface{}, 0)
 	key := generateSafeKey(secret.ObjectMeta.Name)
 	secret.ObjectMeta = generateObjectMetaTemplate(secret.ObjectMeta, key, value, secret.ObjectMeta.Name)
-	//secret.ObjectMeta.Name = key
 	if len(secret.Data) != 0 {
 		for k, v := range secret.Data {
 			value[k] = v
@@ -564,13 +550,13 @@ func secretTemplate(secret kapi.Secret) (string, valueFileGenerator) {
 		log.Fatal(err)
 	}
 	secretData := removeEmptyFields(string(secretDataByte))
-	//dataSecret := make(map[string]interface{}, 0)
-	//dataSecret["data"] = secretDataMap
 	secretData = addSecretData(secretData, secretDataMap, key)
 	return secretData, valueFileGenerator{value: value}
 }
 
 func pvcTemplate(pvc kapi.PersistentVolumeClaim) (string, valueFileGenerator) {
+	cleanUpObjectMeta(&pvc.ObjectMeta)
+	cleanUpDecorators(pvc.ObjectMeta.Annotations)
 	tempValue := make(map[string]interface{}, 0)
 	persistence := make(map[string]interface{}, 0)
 	rawKey := generateSafeKey(pvc.ObjectMeta.Name)
@@ -589,6 +575,7 @@ func pvcTemplate(pvc kapi.PersistentVolumeClaim) (string, valueFileGenerator) {
 }
 
 func pvTemplate(pv kapi.PersistentVolume) (string, valueFileGenerator) {
+	cleanUpObjectMeta(&pv.ObjectMeta)
 	value := make(map[string]interface{}, 0)
 	key := generateSafeKey(pv.ObjectMeta.Name)
 	pv.ObjectMeta = generateObjectMetaTemplate(pv.ObjectMeta, key, value, pv.Name)
@@ -602,6 +589,7 @@ func pvTemplate(pv kapi.PersistentVolume) (string, valueFileGenerator) {
 }
 
 func storageClassTemplate(storageClass storage.StorageClass) (string, valueFileGenerator) {
+	cleanUpObjectMeta(&storageClass.ObjectMeta)
 	value := make(map[string]interface{}, 0)
 	key := generateSafeKey(storageClass.ObjectMeta.Name)
 	storageClass.ObjectMeta = generateObjectMetaTemplate(storageClass.ObjectMeta, key, value, storageClass.ObjectMeta.Name)

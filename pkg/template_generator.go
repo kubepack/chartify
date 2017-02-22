@@ -503,8 +503,8 @@ func addVolumeInRcTemplate(rc string, volumes string) string {
 
 func generateServiceSpecTemplate(svc kapi.ServiceSpec, key string, value map[string]interface{}) kapi.ServiceSpec {
 	if len(svc.ClusterIP) != 0 {
-		value[ClusterIp] = svc.ClusterIP
-		svc.ClusterIP = fmt.Sprintf("{{.Values.%s.%s}}", key, ClusterIp)
+		value[ClusterIP] = svc.ClusterIP
+		svc.ClusterIP = fmt.Sprintf("{{.Values.%s.%s}}", key, ClusterIP)
 	}
 	if len(svc.ExternalName) != 0 {
 		value[ExternalName] = svc.ExternalName

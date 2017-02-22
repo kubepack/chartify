@@ -1,3 +1,2 @@
-pvtest:
-  accessMode: ReadWriteOnce
-  reclaimPolicy: Recycle
+accessMode: ReadWriteOnce
+reclaimPolicy: Recycle

@@ -3,7 +3,6 @@ kind: Job
 metadata:
   labels:
     chart: '{{.Chart.Name}}-{{.Chart.Version}}'
-    controller-uid: '{{.Release.Name}}-d2b46435-f733-11e6-aee4-124f2ed5f410'
     heritage: '{{.Release.Service}}'
     job-name: pi
     release: '{{.Release.Name}}'
@@ -12,13 +11,9 @@ metadata:
 spec:
   completions: 1
   parallelism: 1
-  selector:
-    matchLabels:
-      controller-uid: '{{.Release.Name}}-d2b46435-f733-11e6-aee4-124f2ed5f410'
   template:
     metadata:
       labels:
-        controller-uid: '{{.Release.Name}}-d2b46435-f733-11e6-aee4-124f2ed5f410'
         job-name: pi
       name: pi
     spec:

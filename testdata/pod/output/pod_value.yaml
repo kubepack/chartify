@@ -1,6 +1,5 @@
 mypod:
-  mypod:
-    image: redis
-    imagePullPolicy: Always
-    imageTag: latest
-  namespace: default
+  image: redis
+  imagePullPolicy: Always
+  imageTag: latest
+namespace: default

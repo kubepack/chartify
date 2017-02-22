@@ -64,7 +64,7 @@ const (
 	ISCSIInterface     = "ISCSIInterface"
 	Image              = "image"
 	ImageTag           = "imageTag"
-	ClusterIp          = "clusterIp"
+	ClusterIP          = "clusterIP"
 	ExternalName       = "externalName"
 	LoadBalancer       = "loadBalancer"
 	VolumeName         = "volumeName"
