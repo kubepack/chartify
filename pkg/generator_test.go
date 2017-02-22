@@ -27,7 +27,6 @@ func TestPodTemplate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, string(expectedTemplate), string(template))
 	valueChecker(t, "../testdata/pod/output/pod_value.yaml", values.value)
-	assert.Nil(t, err)
 }
 
 func TestReplicationControllerTemplate(t *testing.T) {
