@@ -1,0 +1,4 @@
+iopsPerGB: "10"
+provisioner: kubernetes.io/aws-ebs
+type: io1
+zone: us-east-1d

@@ -5,13 +5,13 @@ metadata:
     chart: '{{.Chart.Name}}-{{.Chart.Version}}'
     heritage: '{{.Release.Service}}'
     release: '{{.Release.Name}}'
-  name: '{{ template "fullname" . }}-pv0003'
+  name: '{{ template "fullname" . }}-pv-test'
 spec:
   accessModes:
-  - '{{.Values.pv.AccessMode}}'
+  - '{{.Values.pvtest.accessMode}}'
   capacity:
     storage: 5Gi
   nfs:
     path: /tmp
     server: 172.17.0.2
-  persistentVolumeReclaimPolicy: '{{.Values.pv.ReclaimPolicy}}'
+  persistentVolumeReclaimPolicy: '{{.Values.pvtest.reclaimPolicy}}'

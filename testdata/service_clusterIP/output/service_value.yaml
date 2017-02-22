@@ -1,0 +1,4 @@
+clusterIP: None
+namespace: default
+serviceType: ClusterIP
+sessionAffinity: None

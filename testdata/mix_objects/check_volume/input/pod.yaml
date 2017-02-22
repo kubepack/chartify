@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    kubernetes.io/limit-ranger: 'LimitRanger plugin set: cpu request for container
+      myfrontend'
+  creationTimestamp: 2017-02-20T14:05:07Z
+  name: pod
+  namespace: default
+  resourceVersion: "22830483"
+  selfLink: /api/v1/namespaces/default/pods/pod
+  uid: 9558029f-f775-11e6-aee4-124f2ed5f410
+spec:
+  containers:
+  - image: dockerfile/nginx
+    imagePullPolicy: Always
+    name: myfrontend
+    resources:
+      requests:
+        cpu: 100m
+    terminationMessagePath: /dev/termination-log
+    volumeMounts:
+    - mountPath: /var/www/html
+      name: mypd
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-16cwy
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+  volumes:
+  - name: mypd
+    persistentVolumeClaim:
+      claimName: pvc
+  - name: default-token-16cwy
+    secret:
+      defaultMode: 420
+      secretName: default-token-16cwy
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: 2017-02-20T14:05:07Z
+    reason: Unschedulable
+    status: "False"
+    type: PodScheduled
+  phase: Pending

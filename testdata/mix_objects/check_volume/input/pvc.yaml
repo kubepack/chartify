@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: 2017-02-20T14:07:12Z
+  name: pvc
+  namespace: default
+  resourceVersion: "22831598"
+  selfLink: /api/v1/namespaces/default/persistentvolumeclaims/pvc
+  uid: dfeb7978-f775-11e6-aee4-124f2ed5f410
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+status:
+  phase: Pending

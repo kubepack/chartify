@@ -1,10 +1,25 @@
-kind: PersistentVolumeClaim
 apiVersion: v1
+kind: PersistentVolumeClaim
 metadata:
+  annotations:
+    pv.kubernetes.io/bind-completed: "yes"
+    pv.kubernetes.io/bound-by-controller: "yes"
+  creationTimestamp: 2017-02-20T10:08:27Z
   name: myclaim
+  namespace: default
+  resourceVersion: "22700859"
+  selfLink: /api/v1/namespaces/default/persistentvolumeclaims/myclaim
+  uid: 859dd87f-f754-11e6-aee4-124f2ed5f410
 spec:
   accessModes:
-    - ReadWriteOnce
+  - ReadWriteOnce
   resources:
     requests:
-      storage: 8Gi
+      storage: 5Gi
+  volumeName: pv-test
+status:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 5Gi
+  phase: Bound

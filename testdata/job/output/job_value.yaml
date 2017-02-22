@@ -1,4 +1,6 @@
+namespace: default
 pi:
-  pi:
-    image: perl
-    imageTag: latest
+  image: perl
+  imagePullPolicy: Always
+  imageTag: latest
+restartPolicy: Never

@@ -1,5 +1,7 @@
-frontend:
-  phpredis:
-    GETHOSTSFROM: dns
-    image: gcr.io/google_samples/gb-frontend
-    imageTag: v3
+namespace: default
+phpredis:
+  GETHOSTSFROM: dns
+  image: gcr.io/google_samples/gb-frontend
+  imagePullPolicy: IfNotPresent
+  imageTag: v3
+restartPolicy: Always

@@ -1,4 +1,0 @@
-nginxdeployment:
-  nginx:
-    image: nginx
-    imageTag: 1.7.9

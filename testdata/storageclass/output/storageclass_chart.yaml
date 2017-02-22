@@ -11,4 +11,4 @@ parameters:
   iopsPerGB: '{{.Values.teststrg.iopsPerGB}}'
   type: '{{.Values.teststrg.type}}'
   zone: '{{.Values.teststrg.zone}}'
-provisioner: '{{.Values.teststrg.Provisioner}}'
+provisioner: '{{.Values.teststrg.provisioner}}'
