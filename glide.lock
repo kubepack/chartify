@@ -1,5 +1,5 @@
-hash: c38a1f52a3882bb55c9a31c1c10a149a5b4c9d4305de012576eaca7fb84b635e
-updated: 2017-01-11T10:02:20.753663714+06:00
+hash: 33096d75d5b716e904abcf012ecff781618b90c14de959de9724da3a6cf80ca7
+updated: 2017-02-20T09:03:31.597432317-08:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -7,7 +7,7 @@ imports:
   - compute/metadata
   - internal
 - name: github.com/appscode/go
-  version: a7f716de7a1373d1e8a5b31728166ada8e7595c6
+  version: 7ba1c0a441c6c319a501e54db6e93deaff5fe0dd
   subpackages:
   - version
 - name: github.com/blang/semver
@@ -206,13 +206,13 @@ imports:
   repo: https://github.com/go-macaron/macaron.git
   vcs: git
 - name: gopkg.in/yaml.v2
-  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
+  version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
 - name: k8s.io/helm
-  version: 5cbc48fb305ca4bf68c26eb8d2a7eb363227e973
+  version: fc315ab59850ddd1b9b4959c89ef008fef5cdf89
   subpackages:
   - pkg/proto/hapi/chart
 - name: k8s.io/kubernetes
-  version: 5f332aab13e58173f85fd204a2c77731f7a2573f
+  version: 029c3a408176b55c30846f0faedf56aae5992e9b
   subpackages:
   - pkg/api
   - pkg/api/errors

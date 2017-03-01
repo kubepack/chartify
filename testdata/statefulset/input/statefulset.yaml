@@ -1,7 +1,7 @@
 apiVersion: apps/v1alpha1
 kind: StatefulSet
 metadata:
-  name: mypetset
+  name: test
 spec:
   serviceName: "nginx"
   replicas: 2

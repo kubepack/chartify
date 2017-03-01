@@ -1,4 +1,3 @@
-saumanconfigmap:
-  Namespace: default
-  special.how: very
-  special.type: charm
+namespace: default
+special.how: very
+special.type: charm

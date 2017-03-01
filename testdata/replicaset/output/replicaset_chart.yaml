@@ -2,35 +2,36 @@ apiVersion: extensions/v1beta1
 kind: ReplicaSet
 metadata:
   labels:
+    app: guestbook
     chart: '{{.Chart.Name}}-{{.Chart.Version}}'
     heritage: '{{.Release.Service}}'
     release: '{{.Release.Name}}'
+    tier: '{{.Release.Name}}-frontend'
   name: '{{ template "fullname" . }}-frontend'
+  namespace: '{{.Values.frontend.namespace}}'
 spec:
   replicas: 3
   selector:
-    matchExpressions:
-    - key: tier
-      operator: In
-      values:
-      - frontend
     matchLabels:
-      tier: frontend
+      tier: '{{.Release.Name}}-frontend'
   template:
     metadata:
       labels:
         app: guestbook
-        tier: frontend
+        tier: '{{.Release.Name}}-frontend'
     spec:
       containers:
       - env:
         - name: GET_HOSTS_FROM
           value: '{{.Values.frontend.phpredis.GETHOSTSFROM}}'
         image: '{{.Values.frontend.phpredis.image}}:{{.Values.frontend.phpredis.imageTag}}'
+        imagePullPolicy: '{{.Values.frontend.phpredis.imagePullPolicy}}'
         name: php-redis
         ports:
         - containerPort: 80
+          protocol: TCP
         resources:
           requests:
             cpu: 100m
             memory: 100Mi
+      restartPolicy: '{{.Values.frontend.restartPolicy}}'

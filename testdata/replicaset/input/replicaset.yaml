@@ -1,29 +1,49 @@
 apiVersion: extensions/v1beta1
 kind: ReplicaSet
 metadata:
+  creationTimestamp: 2017-02-20T05:18:39Z
+  generation: 1
+  labels:
+    app: guestbook
+    tier: frontend
   name: frontend
+  namespace: default
+  resourceVersion: "22549529"
+  selfLink: /apis/extensions/v1beta1/namespaces/default/replicasets/frontend
+  uid: 09a447ec-f72c-11e6-aee4-124f2ed5f410
 spec:
   replicas: 3
   selector:
     matchLabels:
       tier: frontend
-    matchExpressions:
-      - {key: tier, operator: In, values: [frontend]}
   template:
     metadata:
+      creationTimestamp: null
       labels:
         app: guestbook
         tier: frontend
     spec:
       containers:
-      - name: php-redis
+      - env:
+        - name: GET_HOSTS_FROM
+          value: dns
         image: gcr.io/google_samples/gb-frontend:v3
+        imagePullPolicy: IfNotPresent
+        name: php-redis
+        ports:
+        - containerPort: 80
+          protocol: TCP
         resources:
           requests:
             cpu: 100m
             memory: 100Mi
-        env:
-        - name: GET_HOSTS_FROM
-          value: dns
-        ports:
-        - containerPort: 80
+        terminationMessagePath: /dev/termination-log
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  fullyLabeledReplicas: 3
+  observedGeneration: 1
+  readyReplicas: 3
+  replicas: 3

@@ -1,5 +1,0 @@
-teststrg:
-  Provisioner: kubernetes.io/aws-ebs
-  iopsPerGB: "10"
-  type: io1
-  zone: us-east-1d
