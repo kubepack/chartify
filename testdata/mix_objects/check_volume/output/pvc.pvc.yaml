@@ -7,10 +7,11 @@ metadata:
     heritage: '{{.Release.Service}}'
     release: '{{.Release.Name}}'
   name: '{{ template "fullname" . }}-pvc'
+  namespace: '{{.Values.persistence.pvc.namespace}}'
 spec:
   accessModes:
-  - '{{.Values.persistence.pvc.AccessMode}}'
+  - '{{.Values.persistence.pvc.accessMode}}'
   resources:
     requests:
-      storage: 8Gi
+      storage: 5Gi
 {{- end -}}

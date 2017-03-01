@@ -1,0 +1,20 @@
+configmap:
+  namespace: default
+  special.how: very
+  special.type: charm
+persistence:
+  pvc:
+    accessMode: ReadWriteOnce
+    enabled: true
+    namespace: default
+    volumeName: pv
+pod:
+  myfrontend:
+    image: dockerfile/nginx
+    imagePullPolicy: Always
+    imageTag: latest
+  namespace: default
+  restartPolicy: Always
+pv:
+  accessMode: ReadWriteOnce
+  reclaimPolicy: Recycle

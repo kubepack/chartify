@@ -5,10 +5,10 @@ metadata:
     chart: '{{.Chart.Name}}-{{.Chart.Version}}'
     heritage: '{{.Release.Service}}'
     release: '{{.Release.Name}}'
-  name: '{{ template "fullname" . }}-mypetset'
+  name: '{{ template "fullname" . }}-test'
 spec:
   replicas: 2
-  serviceName: '{{.Values.mypetset.ServiceName}}'
+  serviceName: '{{.Values.test.serviceName}}'
   template:
     metadata:
       annotations:
@@ -17,7 +17,7 @@ spec:
         app: nginx
     spec:
       containers:
-      - image: '{{.Values.mypetset.nginx.image}}:{{.Values.mypetset.nginx.imageTag}}'
+      - image: '{{.Values.test.nginx.image}}:{{.Values.test.nginx.imageTag}}'
         name: nginx
         ports:
         - containerPort: 80

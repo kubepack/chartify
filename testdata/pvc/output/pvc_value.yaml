@@ -1,0 +1,5 @@
+myclaim:
+  accessMode: ReadWriteOnce
+  enabled: true
+  namespace: default
+  volumeName: pv-test

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    chart: '{{.Chart.Name}}-{{.Chart.Version}}'
+    heritage: '{{.Release.Service}}'
+    release: '{{.Release.Name}}'
+  name: '{{ template "fullname" . }}-myapp'
+  namespace: '{{.Values.myapp.namespace}}'
+spec:
+  clusterIP: '{{.Values.myapp.clusterIP}}'
+  ports:
+  - port: 8765
+    protocol: TCP
+    targetPort: 9376
+  selector:
+    app: example
+  sessionAffinity: '{{.Values.myapp.sessionAffinity}}'
+  type: '{{.Values.myapp.serviceType}}'

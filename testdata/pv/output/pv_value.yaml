@@ -1,3 +1,2 @@
-pv0003:
-  AccessMode: ReadWriteOnce
-  ReclaimPolicy: Recycle
+accessMode: ReadWriteOnce
+reclaimPolicy: Recycle
