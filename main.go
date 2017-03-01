@@ -2,8 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"os"
 	"log"
 
 	"github.com/appscode/chartify/pkg/cmd"
