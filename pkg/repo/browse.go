@@ -11,9 +11,6 @@ import (
 	"github.com/graymeta/stow"
 	_ "github.com/graymeta/stow/google"
 	_ "github.com/graymeta/stow/s3"
-	"golang.org/x/net/context"
-	"golang.org/x/oauth2/google"
-	gcloud_gcs "google.golang.org/api/storage/v1"
 	"gopkg.in/macaron.v1"
 )
 
@@ -73,49 +70,41 @@ func StaticBucket(bucketOpt ...BucketOptions) macaron.Handler {
 			return
 		}
 
-		gcsSvc, err := GetGCEClient(gcloud_gcs.DevstorageReadOnlyScope)
-		if err != nil {
-			http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
 		if !opt.SkipLogging {
 			log.Println("[Static] Serving " + ctx.Req.URL.Path + " from " + bucketPath)
 		}
 
 		if strings.HasSuffix(bucketPath, "/") {
-			// folder,  bad luck if you have more 5K files in a single folder
-
-			/*			objs, err := gcsSvc.Objects.List(bucket).Prefix(bucketPath).Delimiter("/").Projection("noAcl").MaxResults(5000).Do()
-						if err != nil {
-							http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
-							return
-						}*/
 			items, _, err := container.Items(bucketPath, "/", "", 5000)
 			if err != nil {
 				http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			files := make([]*dataFile, 0)
-			/*			for _, folder := range objs.Prefixes {
+			/*			for _, folder := range objs.Prefixes { TODO Folder option is missing from stow
 						files = append(files, &dataFile{
 							Name: folder,
 							Type: "FOLDER",
 							Href: fmt.Sprintf("%s/%s/%s", opt.PathPrefix, bucket, folder),
 						})
 					}*/
+
 			for _, file := range items {
-				if file.Name != bucketPath {
-					files = append(files, &dataFile{
-						Name: file.Name,
+				if file.Name() != bucketPath {
+					f := &dataFile{
+						Name: file.Name(),
 						Type: "FILE",
-						Href: ctx.Req.URL.Path + file.Name[strings.LastIndex(file.Name, "/")+1:],
+						Href: ctx.Req.URL.Path + file.Name()[strings.LastIndex(file.Name(), "/")+1:],
 						//ContentType: file.ContentType,
 						//TimeCreated: file.TimeCreated,
 						//Updated:     file.Updated,
-						Size: file.Size,
 						//Md5Hash:     file.Md5Hash,
-					})
+					}
+					size, err := file.Size()
+					if err != nil {
+						f.Size = uint64(size)
+					}
+					files = append(files, f)
 				}
 			}
 			ctx.JSON(200, files)
@@ -132,12 +121,6 @@ func StaticBucket(bucketOpt ...BucketOptions) macaron.Handler {
 				http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			/*			res, err := gcsSvc.Objects.Get(bucket, bucketPath).Download()
-						if err != nil {
-							http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
-							return
-						}*/
-			// specify content-length
 			r, err := item.Open()
 			if err != nil {
 				http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
@@ -151,18 +134,6 @@ func StaticBucket(bucketOpt ...BucketOptions) macaron.Handler {
 			}
 		}
 	}
-}
-
-func GetGCEClient(scope string) (*gcloud_gcs.Service, error) {
-	cred, err := ioutil.ReadFile("/home/sauman/Downloads/tigerworks-kube-3803f9d609c7.json")
-	if err != nil {
-		return nil, err
-	}
-	conf, err := google.JWTConfigFromJSON(cred, scope)
-	if err != nil {
-		return nil, err
-	}
-	return gcloud_gcs.New(conf.Client(context.Background()))
 }
 
 func getCredential() ([]byte, error) {
