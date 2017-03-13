@@ -9,21 +9,19 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/net/context"
-	"golang.org/x/oauth2/google"
-	gcloud_gcs "google.golang.org/api/storage/v1"
+	"github.com/graymeta/stow"
+	_ "github.com/graymeta/stow/google"
+	_ "github.com/graymeta/stow/s3"
 	"gopkg.in/macaron.v1"
 )
 
 type dataFile struct {
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	Href        string `json:"href"`
-	ContentType string `json:"contentType"`
-	TimeCreated string `json:"timeCreated"`
-	Updated     string `json:"updated"`
-	Size        uint64 `json:"size"`
-	Md5Hash     string `json:"md5Hash"`
+	Name    string    `json:"name"`
+	Type    string    `json:"type"`
+	Href    string    `json:"href"`
+	LastMod time.Time `json:"mtime"`
+	Size    int64     `json:"size"`
+	ETag    string    `json:"etag"`
 }
 
 // BucketOptions is a struct for specifying configuration options for the macaron GCS StaticBucket middleware.
@@ -52,46 +50,67 @@ func StaticBucket(bucketOpt ...BucketOptions) macaron.Handler {
 			http.Error(ctx.Resp, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-
-		gcsSvc, err := GetGCEClient(gcloud_gcs.DevstorageReadOnlyScope)
+		bucket := ctx.Params(":container")
+		bucketPath := strings.Replace(ctx.Req.URL.Path, opt.PathPrefix+"/"+bucket+"/", "", 1)
+		provider, config, err := getProviderAndConfig()
+		if err != nil {
+			http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		location, err := stow.Dial(provider, config)
+		if err != nil {
+			http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer location.Close()
+		container, err := location.Container(bucket)
 		if err != nil {
 			http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		bucket := ctx.Params(":container")
-		bucketPath := strings.Replace(ctx.Req.URL.Path, opt.PathPrefix+"/"+bucket+"/", "", 1)
 		if !opt.SkipLogging {
 			log.Println("[Static] Serving " + ctx.Req.URL.Path + " from " + bucketPath)
 		}
 
 		if strings.HasSuffix(bucketPath, "/") {
-			// folder,  bad luck if you have more 5K files in a single folder
-			objs, err := gcsSvc.Objects.List(bucket).Prefix(bucketPath).Delimiter("/").Projection("noAcl").MaxResults(5000).Do()
-			if err != nil {
-				http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
-				return
-			}
 			files := make([]*dataFile, 0)
-			for _, folder := range objs.Prefixes {
-				files = append(files, &dataFile{
-					Name: folder,
-					Type: "FOLDER",
-					Href: fmt.Sprintf("%s/%s/%s", opt.PathPrefix, bucket, folder),
-				})
-			}
-			for _, file := range objs.Items {
-				if file.Name != bucketPath {
+			cursor := stow.CursorStart
+			for {
+				prefixes, items, next, err := container.Browse(bucketPath, "/", cursor, 50)
+				if err != nil {
+					http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				for _, folder := range prefixes {
 					files = append(files, &dataFile{
-						Name:        file.Name,
-						Type:        "FILE",
-						Href:        ctx.Req.URL.Path + file.Name[strings.LastIndex(file.Name, "/")+1:],
-						ContentType: file.ContentType,
-						TimeCreated: file.TimeCreated,
-						Updated:     file.Updated,
-						Size:        file.Size,
-						Md5Hash:     file.Md5Hash,
+						Name: folder,
+						Type: "FOLDER",
+						Href: fmt.Sprintf("%s/%s/%s", opt.PathPrefix, bucket, folder),
 					})
+				}
+				for _, file := range items {
+					if file.Name() != bucketPath {
+						df := &dataFile{
+							Name: file.Name(),
+							Type: "FILE",
+							Href: ctx.Req.URL.Path + file.ID(),
+						}
+						if mtime, err := file.LastMod(); err == nil {
+							df.LastMod = mtime
+						}
+						if sz, err := file.Size(); err == nil {
+							df.Size = sz
+						}
+						if etag, err := file.ETag(); err == nil {
+							df.ETag = etag
+						}
+						files = append(files, df)
+					}
+				}
+				cursor = next
+				if stow.IsCursorEnd(cursor) {
+					break
 				}
 			}
 			ctx.JSON(200, files)
@@ -103,14 +122,18 @@ func StaticBucket(bucketOpt ...BucketOptions) macaron.Handler {
 			}
 
 			// load file
-			res, err := gcsSvc.Objects.Get(bucket, bucketPath).Download()
+			item, err := container.Item(bucketPath)
 			if err != nil {
 				http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			// specify content-length
-			_, err = io.Copy(ctx.Resp, res.Body)
-			defer res.Body.Close()
+			r, err := item.Open()
+			if err != nil {
+				http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			_, err = io.Copy(ctx.Resp, r)
+			r.Close()
 			if err != nil {
 				http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
 				return
@@ -119,14 +142,10 @@ func StaticBucket(bucketOpt ...BucketOptions) macaron.Handler {
 	}
 }
 
-func GetGCEClient(scope string) (*gcloud_gcs.Service, error) {
+func getCredential() ([]byte, error) {
 	cred, err := ioutil.ReadFile("/home/sauman/Downloads/tigerworks-kube-3803f9d609c7.json")
 	if err != nil {
 		return nil, err
 	}
-	conf, err := google.JWTConfigFromJSON(cred, scope)
-	if err != nil {
-		return nil, err
-	}
-	return gcloud_gcs.New(conf.Client(context.Background()))
+	return cred, nil
 }

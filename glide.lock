@@ -1,5 +1,5 @@
-hash: d3452f96d80f578c4fc2a202203eb53612b9fd2ea6ccd75df29f945be42337d5
-updated: 2017-02-28T18:50:04.325508714-08:00
+hash: f9c993d4144752b520e8e2fb26da597b657203c8a08c0887017d81aaeef9e39d
+updated: 2017-03-13T08:54:29.462790827-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -7,9 +7,40 @@ imports:
   - compute/metadata
   - internal
 - name: github.com/appscode/go
-  version: 7ba1c0a441c6c319a501e54db6e93deaff5fe0dd
+  version: b9008e99fa90d7806f404e0eab52bdecb4444826
   subpackages:
   - version
+- name: github.com/aws/aws-sdk-go
+  version: 819b71cf8430e434c1eee7e7e8b0f2b8870be899
+  subpackages:
+  - aws
+  - aws/awserr
+  - aws/awsutil
+  - aws/client
+  - aws/client/metadata
+  - aws/corehandlers
+  - aws/credentials
+  - aws/credentials/ec2rolecreds
+  - aws/credentials/endpointcreds
+  - aws/credentials/stscreds
+  - aws/defaults
+  - aws/ec2metadata
+  - aws/endpoints
+  - aws/request
+  - aws/session
+  - aws/signer/v4
+  - private/protocol
+  - private/protocol/query
+  - private/protocol/query/queryutil
+  - private/protocol/rest
+  - private/protocol/restxml
+  - private/protocol/xml/xmlutil
+  - private/waiter
+  - service/s3
+  - service/sts
+- name: github.com/Azure/azure-sdk-for-go
+  version: 0984e0641ae43b89283223034574d6465be93bf4
+  vcs: git
 - name: github.com/blang/semver
   version: 31b736133b98f26d5e078ec9eb591666edfd091f
 - name: github.com/coreos/go-oidc
@@ -44,6 +75,8 @@ imports:
   - swagger
 - name: github.com/ghodss/yaml
   version: 73d445a93680fa1a78ae23a5839bad48f32ba1ee
+- name: github.com/go-ini/ini
+  version: 2e44421e256d82ebbf3d4d4fcabe8930b905eff3
 - name: github.com/go-macaron/binding
   version: 48920167fa152d02f228cfbece7e0f1e452d200a
 - name: github.com/go-macaron/inject
@@ -106,16 +139,23 @@ imports:
   - ptypes/timestamp
 - name: github.com/google/gofuzz
   version: bbcb9da2d746f8bdbd6a936686a0a6067ada0ec5
+- name: github.com/graymeta/stow
+  version: d4b253dd4995360ae103b6460bbadeaa7fb3cdb4
+  repo: https://github.com/appscode/stow.git
+  vcs: git
+  subpackages:
+  - google
+  - s3
 - name: github.com/howeyc/gopass
   version: 3ca23474a7c7203e0a0a070fd33508f6efdb9b3d
 - name: github.com/imdario/mergo
   version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
+- name: github.com/jmespath/go-jmespath
+  version: 3433f3ea46d9f8019119e7dd41274e112a2359a9
 - name: github.com/jonboulle/clockwork
   version: 72f9bd7c4e0c2a40055ab3d0f09654f730cce982
-- name: github.com/juju/errors
-  version: 6f54ff6318409d31ff16261533ce2c8381a4fd5d
 - name: github.com/juju/ratelimit
   version: 77ed1c8a01217656d2080ad51981f6e99adaa177
 - name: github.com/mailru/easyjson
@@ -127,17 +167,21 @@ imports:
 - name: github.com/Masterminds/semver
   version: 59c29afe1a994eacb71c833025ca7acf874bb1da
 - name: github.com/mitchellh/go-homedir
-  version: b8bc1bf767474819792c23f32d8286a45736f1c6
+  version: d682a8f0cf139663a984ff12528da460ca963de9
+- name: github.com/ncw/swift
+  version: 5850d90fd74c3abb87b70ef3f4cb86198f01a6e6
 - name: github.com/pborman/uuid
   version: ca53cad383cad2479bbba7f7a1a05797ec1386e4
+- name: github.com/pkg/errors
+  version: a22138067af1c4942683050411a841ade67fe1eb
 - name: github.com/PuerkitoBio/purell
   version: 8a290539e2e8629dbc4e6bad948158f790ec31f4
 - name: github.com/PuerkitoBio/urlesc
   version: 5bd2802263f21d8788851d5305584c82a5c75d7e
 - name: github.com/spf13/cobra
-  version: fcd0c5a1df88f5d6784cb4feead962c3f3d0b66c
+  version: 9c28e4bbd74e5c3ed7aacbc552b2cab7cfdfe744
 - name: github.com/spf13/pflag
-  version: 5ccb023bc27df288a957c5e994cd44fd19619465
+  version: c7e63cf4530bcd3ba943729cee0efeff2ebea63f
 - name: github.com/ugorji/go
   version: f1f1a805ed361a0e078bb537e4ea78cd37dcf065
   subpackages:
@@ -192,12 +236,8 @@ imports:
   - unicode/norm
   - width
 - name: google.golang.org/api
-  version: a69f0f19d246419bb931b0ac8f4f8d3f3e6d4feb
+  version: 1202890e803f07684581b575fda809bf335a533f
   subpackages:
-  - cloudmonitoring/v2beta2
-  - compute/v1
-  - container/v1
-  - dns/v1
   - gensupport
   - googleapi
   - googleapi/internal/uritemplates
@@ -217,15 +257,15 @@ imports:
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/ini.v1
-  version: 74bdc99692c3408cb103221e38675ce8fda0a718
+  version: 6e4869b434bd001f6983749881c7ead3545887d8
 - name: gopkg.in/macaron.v1
   version: a325110f8b392bce3e5cdeb8c44bf98078ada3be
   repo: https://github.com/go-macaron/macaron.git
   vcs: git
 - name: gopkg.in/yaml.v2
-  version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
+  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
 - name: k8s.io/helm
-  version: db531fd75fb2a1fb0841a98d9e55c58c21f70f4c
+  version: 1b330722aafcb8123114ae51f69d1e884a326f3e
   subpackages:
   - pkg/chartutil
   - pkg/ignore
@@ -236,7 +276,7 @@ imports:
   - pkg/tlsutil
   - pkg/urlutil
 - name: k8s.io/kubernetes
-  version: 029c3a408176b55c30846f0faedf56aae5992e9b
+  version: 7243c69eb523aa4377bce883e7c0dd76b84709a1
   subpackages:
   - pkg/api
   - pkg/api/errors
