@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -15,14 +16,12 @@ import (
 )
 
 type dataFile struct {
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	Href        string `json:"href"`
-	ContentType string `json:"contentType"`
-	TimeCreated string `json:"timeCreated"`
-	Updated     string `json:"updated"`
-	Size        uint64 `json:"size"`
-	Md5Hash     string `json:"md5Hash"`
+	Name    string    `json:"name"`
+	Type    string    `json:"type"`
+	Href    string    `json:"href"`
+	LastMod time.Time `json:"mtime"`
+	Size    int64     `json:"size"`
+	ETag    string    `json:"etag"`
 }
 
 // BucketOptions is a struct for specifying configuration options for the macaron GCS StaticBucket middleware.
@@ -75,36 +74,43 @@ func StaticBucket(bucketOpt ...BucketOptions) macaron.Handler {
 		}
 
 		if strings.HasSuffix(bucketPath, "/") {
-			items, _, err := container.Items(bucketPath, "/", "", 5000)
-			if err != nil {
-				http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
-				return
-			}
 			files := make([]*dataFile, 0)
-			/*			for _, folder := range objs.Prefixes { TODO Folder option is missing from stow
-						files = append(files, &dataFile{
-							Name: folder,
-							Type: "FOLDER",
-							Href: fmt.Sprintf("%s/%s/%s", opt.PathPrefix, bucket, folder),
-						})
-					}*/
-
-			for _, file := range items {
-				if file.Name() != bucketPath {
-					f := &dataFile{
-						Name: file.Name(),
-						Type: "FILE",
-						Href: ctx.Req.URL.Path + file.Name()[strings.LastIndex(file.Name(), "/")+1:],
-						//ContentType: file.ContentType,
-						//TimeCreated: file.TimeCreated,
-						//Updated:     file.Updated,
-						//Md5Hash:     file.Md5Hash,
+			cursor := stow.CursorStart
+			for {
+				prefixes, items, next, err := container.Browse(bucketPath, "/", cursor, 50)
+				if err != nil {
+					http.Error(ctx.Resp, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				for _, folder := range prefixes {
+					files = append(files, &dataFile{
+						Name: folder,
+						Type: "FOLDER",
+						Href: fmt.Sprintf("%s/%s/%s", opt.PathPrefix, bucket, folder),
+					})
+				}
+				for _, file := range items {
+					if file.Name() != bucketPath {
+						df := &dataFile{
+							Name: file.Name(),
+							Type: "FILE",
+							Href: ctx.Req.URL.Path + file.ID(),
+						}
+						if mtime, err := file.LastMod(); err == nil {
+							df.LastMod = mtime
+						}
+						if sz, err := file.Size(); err == nil {
+							df.Size = sz
+						}
+						if etag, err := file.ETag(); err == nil {
+							df.ETag = etag
+						}
+						files = append(files, df)
 					}
-					size, err := file.Size()
-					if err != nil {
-						f.Size = uint64(size)
-					}
-					files = append(files, f)
+				}
+				cursor = next
+				if stow.IsCursorEnd(cursor) {
+					break
 				}
 			}
 			ctx.JSON(200, files)
