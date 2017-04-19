@@ -235,12 +235,9 @@ func generateTemplateForVolume(volumes []kapi.Volume, key string, value map[stri
 }
 
 func generateTemplateForContainer(containers []kapi.Container, key string, value map[string]interface{}) []kapi.Container {
-	containterValue := make(map[string]interface{}, 0)
 	result := make([]kapi.Container, len(containers))
-	for k := range containterValue {
-		delete(containterValue, k)
-	}
 	for i, container := range containers {
+		containterValue := make(map[string]interface{}, 0)
 		containerName := generateSafeKey(container.Name)
 		container.Image = addTemplateImageValue(containerName, container.Image, key, containterValue)
 		if len(container.ImagePullPolicy) != 0 {
