@@ -221,6 +221,19 @@ func TestChartForVolume(t *testing.T) {
 	os.Remove(chdir)
 }
 
+func TestChartForMultipleContainer(t *testing.T) {
+	yamlFile, err := ioutil.ReadFile("../testdata/multiple_container/input/deployment.yaml")
+	assert.Nil(t, err)
+	deployment := ext.Deployment{}
+	err = yaml.Unmarshal(yamlFile, &deployment)
+	assert.Nil(t, err)
+	template, values := deploymentTemplate(deployment)
+	expectedTemplate, err := ioutil.ReadFile("../testdata/multiple_container/output/deployment_chart.yaml")
+	assert.Nil(t, err)
+	assert.Equal(t, string(expectedTemplate), string(template))
+	valueChecker(t, "../testdata/multiple_container/output/deployment_value.yaml", values.value)
+}
+
 func valueChecker(t *testing.T, expectedPath string, value map[string]interface{}) {
 	valuesInfo, err := ylib.Marshal(value)
 	assert.Nil(t, err)

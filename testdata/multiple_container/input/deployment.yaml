@@ -1,0 +1,21 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: test
+  labels:
+    run: test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: test
+  template:
+    metadata:
+      labels:
+        run: test
+    spec:
+      containers:
+      - image: redis
+        name: testredis
+      - image: nginx
+        name: testnginx
