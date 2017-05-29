@@ -3,4 +3,5 @@ nginx:
   image: nginx
   imagePullPolicy: Always
   imageTag: latest
+replicas: 3
 restartPolicy: Always

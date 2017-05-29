@@ -11,6 +11,8 @@ import (
 	"github.com/ghodss/yaml"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	kapi "k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/apis/extensions"
+	"regexp"
 )
 
 func generateObjectMetaTemplate(objectMeta kapi.ObjectMeta, key string, value map[string]interface{}, extraTagForName string) kapi.ObjectMeta {
@@ -36,6 +38,72 @@ func generateObjectMetaTemplate(objectMeta kapi.ObjectMeta, key string, value ma
 	return objectMeta
 }
 
+func generateTemplateReplicationCtrSpec(rcSpec kapi.ReplicationControllerSpec, rcSpecStr string, key string, value map[string]interface{}) (string, map[string]interface{}) {
+	templateDeployment := rcSpecStr
+
+	templateDeployment = updateIntParamAsStringInTemplate(templateDeployment, key, "replicas")
+	value["replicas"] = rcSpec.Replicas
+
+	if rcSpec.MinReadySeconds != 0 {
+		templateDeployment = updateIntParamAsStringInTemplate(templateDeployment, key, "minReadySeconds")
+		value["minReadySeconds"] = rcSpec.MinReadySeconds
+	}
+
+	return templateDeployment, value
+}
+
+func generateTemplateReplicaSetSpec(rsSpec extensions.ReplicaSetSpec, rsSpecStr string, key string, value map[string]interface{}) (string, map[string]interface{}) {
+	templateDeployment := rsSpecStr
+
+	templateDeployment = updateIntParamAsStringInTemplate(templateDeployment, key, "replicas")
+	value["replicas"] = rsSpec.Replicas
+
+	if rsSpec.MinReadySeconds != 0 {
+		templateDeployment = updateIntParamAsStringInTemplate(templateDeployment, key, "minReadySeconds")
+		value["minReadySeconds"] = rsSpec.MinReadySeconds
+	}
+
+	return templateDeployment, value
+}
+
+func generateTemplateDeplymentSpec(dcSpec extensions.DeploymentSpec, dcSpecStr string, key string, value map[string]interface{}) (string, map[string]interface{}) {
+	templateDeployment := dcSpecStr
+	templateDeployment = updateIntParamAsStringInTemplate(templateDeployment, key, "replicas")
+	value["replicas"] = dcSpec.Replicas
+
+	if dcSpec.MinReadySeconds != 0 {
+		templateDeployment = updateIntParamAsStringInTemplate(templateDeployment, key, "minReadySeconds")
+		value["minReadySeconds"] = dcSpec.MinReadySeconds
+	}
+
+	if dcSpec.RevisionHistoryLimit != nil {
+		templateDeployment = updateIntParamAsStringInTemplate(templateDeployment, key, "revisionHistoryLimit")
+		value["revisionHistoryLimit"] = dcSpec.RevisionHistoryLimit
+	}
+
+	return templateDeployment, value
+}
+
+func updateIntParamAsStringInTemplate(spec string, key string, replace string) string {
+	str := strings.Split(spec, "\n")
+	templateForReplica := ""
+	for _, l := range str {
+		if len(l) == 0 {
+			continue
+		}
+		if strings.Contains(l, replace + ": ") {
+			str1 := fmt.Sprintf("{{.Values.%s.%s}}", key, replace)
+			regex := regexp.MustCompile(".*" + replace + ":")
+			extrStr := regex.FindString(l)
+			templateForReplica = templateForReplica + extrStr + " " + str1 + "\n"
+		} else {
+			templateForReplica = templateForReplica + l + "\n"
+		}
+	}
+	return templateForReplica
+}
+
+
 func generateTemplateForPodSpec(podSpec kapi.PodSpec, key string, value map[string]interface{}) kapi.PodSpec {
 	podSpec.Containers = generateTemplateForContainer(podSpec.Containers, key, value)
 	if len(podSpec.Hostname) != 0 {
@@ -58,6 +126,7 @@ func generateTemplateForPodSpec(podSpec kapi.PodSpec, key string, value map[stri
 		value[RestartPolicy] = string(podSpec.RestartPolicy)
 		podSpec.RestartPolicy = kapi.RestartPolicy(fmt.Sprintf("{{.Values.%s.%s}}", key, RestartPolicy))
 	}
+
 	return podSpec
 }
 
@@ -266,6 +335,7 @@ func generateTemplateForContainer(containers []kapi.Container, key string, value
 				container.Env[k].Value = fmt.Sprintf("{{.Values.%s.%s.%s}}", key, generateSafeKey(container.Name), envName)
 			}
 		}
+
 		result[i] = container
 		value[generateSafeKey(container.Name)] = containterValue
 	}
@@ -314,7 +384,16 @@ func addContainerValue(key string, s1 string, s2 string) string {
 }
 
 func addTemplateImageValue(containerName string, image string, key string, containerValue map[string]interface{}) string {
-	img := strings.Split(image, ":")
+	var img []string
+	var repo string = ""
+	if strings.Contains(image, "/") {
+		// If pulling from custom registry, need to separate explicitly as custom registry may in format (name:port)
+		image_str := strings.SplitN(image, "/", 2)
+		repo = image_str[0]
+		img = strings.Split(image_str[1], ":")
+	} else {
+		img = strings.Split(image, ":")
+	}
 	imageName := ""
 	imageTag := "latest"
 	key = generateSafeKey(key)
@@ -326,7 +405,12 @@ func addTemplateImageValue(containerName string, image string, key string, conta
 	} else {
 		imageName = img[0]
 	}
-	containerValue[Image] = imageName
+
+	if len(repo) != 0 {
+		containerValue[Image] = fmt.Sprintf("%s/%s", repo, imageName)
+	} else {
+		containerValue[Image] = imageName
+	}
 	containerValue[ImageTag] = imageTag
 	imageTemplate := fmt.Sprintf("%s:%s", imageNameTemplate, imageTagTemplate)
 	return imageTemplate
