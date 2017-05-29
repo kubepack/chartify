@@ -8,7 +8,7 @@ metadata:
     run: '{{.Release.Name}}-test'
   name: '{{ template "fullname" . }}-test'
 spec:
-  replicas: 1
+  replicas: {{.Values.test.replicas}}
   selector:
     matchLabels:
       run: '{{.Release.Name}}-test'

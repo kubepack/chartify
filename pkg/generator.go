@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 
 	ylib "github.com/ghodss/yaml"
 	"k8s.io/helm/pkg/proto/hapi/chart"
@@ -308,6 +309,9 @@ func replicationControllerTemplate(rc kapi.ReplicationController) (string, value
 		log.Fatal(err)
 	}
 	tempRc := removeEmptyFields(string(tempRcByte))
+
+	tempRc, value = generateTemplateReplicationCtrSpec(rc.Spec, tempRc, key, value)
+
 	template := ""
 	if len(volumes) != 0 {
 		template = addVolumeToTemplate(tempRc, volumes)
@@ -339,6 +343,9 @@ func replicaSetTemplate(replicaSet kext.ReplicaSet) (string, valueFileGenerator)
 		log.Fatal(err)
 	}
 	tempReplicaSet := removeEmptyFields(string(tempRcSetByte))
+
+	tempReplicaSet, value = generateTemplateReplicaSetSpec(replicaSet.Spec, tempReplicaSet, key, value)
+
 	if len(volumes) != 0 {
 		template = addVolumeToTemplate(tempReplicaSet, volumes) // RC and replica_set has volume in same layer
 	} else {
@@ -383,11 +390,14 @@ func deploymentTemplate(deployment kext.Deployment) (string, valueFileGenerator)
 	}
 	tempDeployment := removeEmptyFields(string(tempDeploymentByte))
 
+	tempDeployment, value = generateTemplateDeplymentSpec(deployment.Spec, tempDeployment, key, value)
+
 	if len(volumes) != 0 {
 		template = addVolumeToTemplate(tempDeployment, volumes)
 	} else {
 		template = tempDeployment
 	}
+
 	return template, valueFileGenerator{value: value, persistence: persistence}
 }
 
@@ -538,8 +548,15 @@ func secretTemplate(secret kapi.Secret) (string, valueFileGenerator) {
 	secret.ObjectMeta = generateObjectMetaTemplate(secret.ObjectMeta, key, value, secret.ObjectMeta.Name)
 	if len(secret.Data) != 0 {
 		for k, v := range secret.Data {
-			value[k] = v
-			secretDataMap[k] = (fmt.Sprintf("{{.Values.%s.%s}}", key, k))
+			if strings.HasPrefix(k, ".") {
+				// For values that starts with ".", the Values string get populated with ".." - error for helm
+				kmod := strings.Replace(k, ".", "", 1)
+				value[kmod] = v
+				secretDataMap[k] = (fmt.Sprintf("{{.Values.%s.%s}}", key, kmod))
+			} else {
+				value[k] = v
+				secretDataMap[k] = (fmt.Sprintf("{{.Values.%s.%s}}", key, k))
+			}
 		}
 	}
 	secret.Data = nil
