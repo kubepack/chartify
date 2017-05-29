@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -86,7 +87,7 @@ func generateTemplateDeplymentSpec(dcSpec extensions.DeploymentSpec, dcSpecStr s
 
 func updateIntParamAsStringInTemplate(spec string, key string, replace string) string {
 	str := strings.Split(spec, "\n")
-	templateForReplica := ""
+	var tpl bytes.Buffer
 	for _, l := range str {
 		if len(l) == 0 {
 			continue
@@ -95,12 +96,15 @@ func updateIntParamAsStringInTemplate(spec string, key string, replace string) s
 			str1 := fmt.Sprintf("{{.Values.%s.%s}}", key, replace)
 			regex := regexp.MustCompile(".*" + replace + ":")
 			extrStr := regex.FindString(l)
-			templateForReplica = templateForReplica + extrStr + " " + str1 + "\n"
+			tpl.WriteString(extrStr)
+			tpl.WriteString(" ")
+			tpl.WriteString(str1)
 		} else {
-			templateForReplica = templateForReplica + l + "\n"
+			tpl.WriteString(l)
 		}
+		tpl.WriteRune('\n')
 	}
-	return templateForReplica
+	return tpl.String()
 }
 
 func generateTemplateForPodSpec(podSpec kapi.PodSpec, key string, value map[string]interface{}) kapi.PodSpec {
