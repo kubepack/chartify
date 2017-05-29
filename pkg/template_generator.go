@@ -6,13 +6,13 @@ import (
 	"io/ioutil"
 	"log"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/ghodss/yaml"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	kapi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/extensions"
-	"regexp"
 )
 
 func generateObjectMetaTemplate(objectMeta kapi.ObjectMeta, key string, value map[string]interface{}, extraTagForName string) kapi.ObjectMeta {
@@ -91,7 +91,7 @@ func updateIntParamAsStringInTemplate(spec string, key string, replace string) s
 		if len(l) == 0 {
 			continue
 		}
-		if strings.Contains(l, replace + ": ") {
+		if strings.Contains(l, replace+": ") {
 			str1 := fmt.Sprintf("{{.Values.%s.%s}}", key, replace)
 			regex := regexp.MustCompile(".*" + replace + ":")
 			extrStr := regex.FindString(l)
@@ -102,7 +102,6 @@ func updateIntParamAsStringInTemplate(spec string, key string, replace string) s
 	}
 	return templateForReplica
 }
-
 
 func generateTemplateForPodSpec(podSpec kapi.PodSpec, key string, value map[string]interface{}) kapi.PodSpec {
 	podSpec.Containers = generateTemplateForContainer(podSpec.Containers, key, value)
@@ -382,7 +381,6 @@ func addContainerValue(key string, s1 string, s2 string) string {
 	value := fmt.Sprintf("{{.Values.%s.%s.%s}}", key, s1, s2)
 	return value
 }
-
 
 func addTemplateImageValue(containerName string, image string, key string, containerValue map[string]interface{}) string {
 	// Example: appscode/voyager:1.5.1                 , appscode/voyager

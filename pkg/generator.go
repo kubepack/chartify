@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 
 	ylib "github.com/ghodss/yaml"
 	"k8s.io/helm/pkg/proto/hapi/chart"
@@ -19,7 +20,6 @@ import (
 	"k8s.io/kubernetes/pkg/apis/storage"
 	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/yaml"
-	"strings"
 )
 
 type Generator struct {
@@ -310,7 +310,7 @@ func replicationControllerTemplate(rc kapi.ReplicationController) (string, value
 	}
 	tempRc := removeEmptyFields(string(tempRcByte))
 
-	tempRc, value = generateTemplateReplicationCtrSpec(rc.Spec, tempRc, key, value )
+	tempRc, value = generateTemplateReplicationCtrSpec(rc.Spec, tempRc, key, value)
 
 	template := ""
 	if len(volumes) != 0 {
@@ -344,7 +344,7 @@ func replicaSetTemplate(replicaSet kext.ReplicaSet) (string, valueFileGenerator)
 	}
 	tempReplicaSet := removeEmptyFields(string(tempRcSetByte))
 
-	tempReplicaSet, value = generateTemplateReplicaSetSpec(replicaSet.Spec, tempReplicaSet, key, value )
+	tempReplicaSet, value = generateTemplateReplicaSetSpec(replicaSet.Spec, tempReplicaSet, key, value)
 
 	if len(volumes) != 0 {
 		template = addVolumeToTemplate(tempReplicaSet, volumes) // RC and replica_set has volume in same layer
@@ -390,7 +390,7 @@ func deploymentTemplate(deployment kext.Deployment) (string, valueFileGenerator)
 	}
 	tempDeployment := removeEmptyFields(string(tempDeploymentByte))
 
-	tempDeployment, value = generateTemplateDeplymentSpec(deployment.Spec, tempDeployment, key, value )
+	tempDeployment, value = generateTemplateDeplymentSpec(deployment.Spec, tempDeployment, key, value)
 
 	if len(volumes) != 0 {
 		template = addVolumeToTemplate(tempDeployment, volumes)
@@ -548,7 +548,7 @@ func secretTemplate(secret kapi.Secret) (string, valueFileGenerator) {
 	secret.ObjectMeta = generateObjectMetaTemplate(secret.ObjectMeta, key, value, secret.ObjectMeta.Name)
 	if len(secret.Data) != 0 {
 		for k, v := range secret.Data {
-			if strings.HasPrefix(k , ".") {
+			if strings.HasPrefix(k, ".") {
 				// For values that starts with ".", the Values string get populated with ".." - error for helm
 				kmod := strings.Replace(k, ".", "", 1)
 				value[kmod] = v
