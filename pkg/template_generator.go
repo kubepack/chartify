@@ -383,35 +383,24 @@ func addContainerValue(key string, s1 string, s2 string) string {
 	return value
 }
 
+
 func addTemplateImageValue(containerName string, image string, key string, containerValue map[string]interface{}) string {
-	var img []string
-	var repo string = ""
-	if strings.Contains(image, "/") {
-		// If pulling from custom registry, need to separate explicitly as custom registry may in format (name:port)
-		image_str := strings.SplitN(image, "/", 2)
-		repo = image_str[0]
-		img = strings.Split(image_str[1], ":")
+	// Example: appscode/voyager:1.5.1                 , appscode/voyager
+	// Example: docker.appscode.com/ark:0.1.0          , docker.appscode.com/ark
+	// Example: localhost.localdomain:5000/ubuntu:16.04, localhost.localdomain:5000/ubuntu
+	indexSlash := strings.LastIndex(image, "/")
+	indexColon := strings.LastIndex(image, ":")
+	if indexColon > indexSlash {
+		// user used image tag
+		containerValue[Image] = image[:indexColon]
+		containerValue[ImageTag] = image[indexColon+1:]
 	} else {
-		img = strings.Split(image, ":")
+		containerValue[Image] = image
+		containerValue[ImageTag] = "latest"
 	}
-	imageName := ""
-	imageTag := "latest"
 	key = generateSafeKey(key)
 	imageNameTemplate := fmt.Sprintf("{{.Values.%s.%s.%s}}", key, containerName, Image)
 	imageTagTemplate := fmt.Sprintf("{{.Values.%s.%s.%s}}", key, containerName, ImageTag)
-	if len(img) == 2 {
-		imageName = img[0]
-		imageTag = img[1]
-	} else {
-		imageName = img[0]
-	}
-
-	if len(repo) != 0 {
-		containerValue[Image] = fmt.Sprintf("%s/%s", repo, imageName)
-	} else {
-		containerValue[Image] = imageName
-	}
-	containerValue[ImageTag] = imageTag
 	imageTemplate := fmt.Sprintf("%s:%s", imageNameTemplate, imageTagTemplate)
 	return imageTemplate
 }
