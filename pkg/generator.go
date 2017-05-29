@@ -216,7 +216,7 @@ func (g Generator) Create() (string, error) {
 	if err := ioutil.WriteFile(valueDir, []byte(valueFileData), 0644); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("CREATE : SUCCESSFULL")
+	fmt.Println("CREATE : SUCCESSFUL")
 	return cdir, nil
 }
 
