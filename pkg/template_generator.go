@@ -313,21 +313,24 @@ func addContainerValue(key string, s1 string, s2 string) string {
 	return value
 }
 
+
 func addTemplateImageValue(containerName string, image string, key string, containerValue map[string]interface{}) string {
-	img := strings.Split(image, ":")
-	imageName := ""
-	imageTag := "latest"
+	// Example: appscode/voyager:1.5.1                 , appscode/voyager
+	// Example: docker.appscode.com/ark:0.1.0          , docker.appscode.com/ark
+	// Example: localhost.localdomain:5000/ubuntu:16.04, localhost.localdomain:5000/ubuntu
+	indexSlash := strings.LastIndex(image, "/")
+	indexColon := strings.LastIndex(image, ":")
+	if indexColon > indexSlash {
+		// user used image tag
+		containerValue[Image] = image[:indexColon]
+		containerValue[ImageTag] = image[indexColon+1:]
+	} else {
+		containerValue[Image] = image
+		containerValue[ImageTag] = "latest"
+	}
 	key = generateSafeKey(key)
 	imageNameTemplate := fmt.Sprintf("{{.Values.%s.%s.%s}}", key, containerName, Image)
 	imageTagTemplate := fmt.Sprintf("{{.Values.%s.%s.%s}}", key, containerName, ImageTag)
-	if len(img) == 2 {
-		imageName = img[0]
-		imageTag = img[1]
-	} else {
-		imageName = img[0]
-	}
-	containerValue[Image] = imageName
-	containerValue[ImageTag] = imageTag
 	imageTemplate := fmt.Sprintf("%s:%s", imageNameTemplate, imageTagTemplate)
 	return imageTemplate
 }
