@@ -130,6 +130,19 @@ func generateTemplateForPodSpec(podSpec kapi.PodSpec, key string, value map[stri
 		podSpec.RestartPolicy = kapi.RestartPolicy(fmt.Sprintf("{{.Values.%s.%s}}", key, RestartPolicy))
 	}
 
+	if len(podSpec.ImagePullSecrets) != 0 {
+		imagePullSecretsObj := []kapi.LocalObjectReference{}
+
+		for _, imagePullSecrets := range podSpec.ImagePullSecrets {
+			imagePullSecrets.Name = generateSafeKey(imagePullSecrets.Name)
+			value["imagePullSecrets"] = imagePullSecrets.Name
+			imagePullSecretsObj = append(imagePullSecretsObj, kapi.LocalObjectReference{Name: imagePullSecrets.Name})
+		}
+
+		podSpec.ImagePullSecrets = imagePullSecretsObj
+
+	}
+
 	return podSpec
 }
 

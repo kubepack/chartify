@@ -513,6 +513,9 @@ func serviceTemplate(svc kapi.Service) (string, valueFileGenerator) {
 		svc.Spec.ClusterIP = ""
 	}
 	svc.Spec = generateServiceSpecTemplate(svc.Spec, key, value)
+	if svc.Spec.Selector != nil {
+		svc.Spec.Selector = modifySvcLabelSelector(svc.Spec.Selector, svc.ObjectMeta.Labels)
+	}
 	svcData, err := ylib.Marshal(svc)
 	if err != nil {
 		log.Fatal(err)
@@ -626,8 +629,16 @@ func addSecretData(secretData string, secretDataMap map[string]interface{}, key 
 	end := "{{ end }}"
 	data := ""
 	for k, v := range secretDataMap {
-		ifCondition := fmt.Sprintf("{{ if .Values.%s.%s }}", key, k)
-		data += fmt.Sprintf("  %s\n  %s: %s\n  %s\n  %s: %s\n  %s\n", ifCondition, k, v, elseCondition, k, elseAction, end)
+		if strings.HasPrefix(k, ".") {
+			// For values that starts with ".", the Values string get populated with ".." - error for helm
+			kmod := strings.Replace(k, ".", "", 1)
+			ifCondition := fmt.Sprintf("{{ if .Values.%s.%s }}", key, kmod)
+			data += fmt.Sprintf("  %s\n  %s: %s\n  %s\n  %s: %s\n  %s\n", ifCondition, k, v, elseCondition, k, elseAction, end)
+		} else {
+			ifCondition := fmt.Sprintf("{{ if .Values.%s.%s }}", key, k)
+			data += fmt.Sprintf("  %s\n  %s: %s\n  %s\n  %s: %s\n  %s\n", ifCondition, k, v, elseCondition, k, elseAction, end)
+		}
+
 	}
 	dataOfSecret := "data:" + "\n" + data
 	return (secretData + dataOfSecret)
@@ -715,6 +726,16 @@ func modifyLabelSelector(selector *unversioned.LabelSelector, templateLabels map
 		templateLabels[k] = selector.MatchLabels[k]
 		metaLabels[k] = selector.MatchLabels[k]
 	}
+}
+
+func modifySvcLabelSelector(selector map[string]string, metaLabels map[string]string) map[string]string {
+
+	for k, v := range selector {
+
+		selector[k] = "{{.Release.Name}}-" + v
+	}
+
+	return selector
 }
 
 func cleanupForReplicaSets(rcSet *kext.ReplicaSet) {
