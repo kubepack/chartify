@@ -5,6 +5,6 @@ import:
 - package: github.com/mitchellh/go-homedir
 - package: github.com/spf13/cobra
 - package: k8s.io/helm
-  version: ^2.1.0
-- package: k8s.io/kubernetes
-  version: ~1.5.0
+  version: ^2.4.2
+- package: k8s.io/client-go
+  version: v3.0.0-beta.0

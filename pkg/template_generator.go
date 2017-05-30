@@ -11,12 +11,13 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiv1 "k8s.io/client-go/pkg/api/v1"
+	extensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/helm/pkg/proto/hapi/chart"
-	kapi "k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/apis/extensions"
 )
 
-func generateObjectMetaTemplate(objectMeta kapi.ObjectMeta, key string, value map[string]interface{}, extraTagForName string) kapi.ObjectMeta {
+func generateObjectMetaTemplate(objectMeta v1.ObjectMeta, key string, value map[string]interface{}, extraTagForName string) v1.ObjectMeta {
 	if len(objectMeta.Name) != 0 {
 		objectMeta.Name = fmt.Sprintf(`{{ template "fullname" . }}`)
 	}
@@ -39,7 +40,7 @@ func generateObjectMetaTemplate(objectMeta kapi.ObjectMeta, key string, value ma
 	return objectMeta
 }
 
-func generateTemplateReplicationCtrSpec(rcSpec kapi.ReplicationControllerSpec, rcSpecStr string, key string, value map[string]interface{}) (string, map[string]interface{}) {
+func generateTemplateReplicationCtrSpec(rcSpec apiv1.ReplicationControllerSpec, rcSpecStr string, key string, value map[string]interface{}) (string, map[string]interface{}) {
 	templateDeployment := rcSpecStr
 
 	templateDeployment = updateIntParamAsStringInTemplate(templateDeployment, key, "replicas")
@@ -107,7 +108,7 @@ func updateIntParamAsStringInTemplate(spec string, key string, replace string) s
 	return tpl.String()
 }
 
-func generateTemplateForPodSpec(podSpec kapi.PodSpec, key string, value map[string]interface{}) kapi.PodSpec {
+func generateTemplateForPodSpec(podSpec apiv1.PodSpec, key string, value map[string]interface{}) apiv1.PodSpec {
 	podSpec.Containers = generateTemplateForContainer(podSpec.Containers, key, value)
 	if len(podSpec.Hostname) != 0 {
 		value[HostName] = podSpec.Hostname
@@ -127,13 +128,13 @@ func generateTemplateForPodSpec(podSpec kapi.PodSpec, key string, value map[stri
 	}
 	if len(string(podSpec.RestartPolicy)) != 0 {
 		value[RestartPolicy] = string(podSpec.RestartPolicy)
-		podSpec.RestartPolicy = kapi.RestartPolicy(fmt.Sprintf("{{.Values.%s.%s}}", key, RestartPolicy))
+		podSpec.RestartPolicy = apiv1.RestartPolicy(fmt.Sprintf("{{.Values.%s.%s}}", key, RestartPolicy))
 	}
 
 	return podSpec
 }
 
-func generateTemplateForVolume(volumes []kapi.Volume, key string, value map[string]interface{}) (string, map[string]interface{}) {
+func generateTemplateForVolume(volumes []apiv1.Volume, key string, value map[string]interface{}) (string, map[string]interface{}) {
 	volumeTemplate := ""
 	ifCondition := ""
 	partialvolumeTemplate := ""
@@ -142,7 +143,7 @@ func generateTemplateForVolume(volumes []kapi.Volume, key string, value map[stri
 		ifCondition = ""
 		volumeMap := make(map[string]interface{}, 0)
 		volumeMap[Enabled] = true
-		vol := []kapi.Volume{}
+		vol := []apiv1.Volume{}
 		vol = append(vol, volume)
 		if volume.PersistentVolumeClaim != nil {
 			ifCondition = buildIfConditionForVolume(volume.PersistentVolumeClaim.ClaimName)
@@ -306,15 +307,15 @@ func generateTemplateForVolume(volumes []kapi.Volume, key string, value map[stri
 	return volumeTemplate, persistence
 }
 
-func generateTemplateForContainer(containers []kapi.Container, key string, value map[string]interface{}) []kapi.Container {
-	result := make([]kapi.Container, len(containers))
+func generateTemplateForContainer(containers []apiv1.Container, key string, value map[string]interface{}) []apiv1.Container {
+	result := make([]apiv1.Container, len(containers))
 	for i, container := range containers {
 		containterValue := make(map[string]interface{}, 0)
 		containerName := generateSafeKey(container.Name)
 		container.Image = addTemplateImageValue(containerName, container.Image, key, containterValue)
 		if len(container.ImagePullPolicy) != 0 {
 			containterValue[ImagePullPolicy] = string(container.ImagePullPolicy)
-			container.ImagePullPolicy = kapi.PullPolicy(addContainerValue(key, containerName, ImagePullPolicy))
+			container.ImagePullPolicy = apiv1.PullPolicy(addContainerValue(key, containerName, ImagePullPolicy))
 		}
 		if len(container.Env) != 0 {
 			for k, v := range container.Env {
@@ -573,7 +574,7 @@ func addVolumeInRcTemplate(rc string, volumes string) string {
 	return templateForPod
 }
 
-func generateServiceSpecTemplate(svc kapi.ServiceSpec, key string, value map[string]interface{}) kapi.ServiceSpec {
+func generateServiceSpecTemplate(svc apiv1.ServiceSpec, key string, value map[string]interface{}) apiv1.ServiceSpec {
 	if len(svc.ClusterIP) != 0 {
 		value[ClusterIP] = svc.ClusterIP
 		svc.ClusterIP = fmt.Sprintf("{{.Values.%s.%s}}", key, ClusterIP)
@@ -588,16 +589,16 @@ func generateServiceSpecTemplate(svc kapi.ServiceSpec, key string, value map[str
 	}
 	if len(string(svc.Type)) != 0 {
 		value[ServiceType] = string(svc.Type)
-		svc.Type = kapi.ServiceType(fmt.Sprintf("{{.Values.%s.%s}}", key, ServiceType))
+		svc.Type = apiv1.ServiceType(fmt.Sprintf("{{.Values.%s.%s}}", key, ServiceType))
 	}
 	if len(string(svc.SessionAffinity)) != 0 {
 		value[SessionAffinity] = string(svc.SessionAffinity)
-		svc.SessionAffinity = kapi.ServiceAffinity(fmt.Sprintf("{{.Values.%s.%s}}", key, SessionAffinity))
+		svc.SessionAffinity = apiv1.ServiceAffinity(fmt.Sprintf("{{.Values.%s.%s}}", key, SessionAffinity))
 	}
 	return svc
 }
 
-func generatePersistentVolumeClaimSpec(pvcspec kapi.PersistentVolumeClaimSpec, key string, value map[string]interface{}) kapi.PersistentVolumeClaimSpec {
+func generatePersistentVolumeClaimSpec(pvcspec apiv1.PersistentVolumeClaimSpec, key string, value map[string]interface{}) apiv1.PersistentVolumeClaimSpec {
 	if len(pvcspec.VolumeName) != 0 {
 		value[VolumeName] = pvcspec.VolumeName
 		pvcspec.VolumeName = fmt.Sprintf("{{.Values.%s.%s}}", key, VolumeName)
@@ -605,7 +606,7 @@ func generatePersistentVolumeClaimSpec(pvcspec kapi.PersistentVolumeClaimSpec, k
 	if len(pvcspec.AccessModes) != 0 {
 		value[AccessMode] = pvcspec.AccessModes[0] //TODO sauman (multiple access mode)
 		pvcspec.AccessModes = nil
-		pvcspec.AccessModes = append(pvcspec.AccessModes, kapi.PersistentVolumeAccessMode(fmt.Sprintf("{{.Values.%s.%s}}", key, AccessMode)))
+		pvcspec.AccessModes = append(pvcspec.AccessModes, apiv1.PersistentVolumeAccessMode(fmt.Sprintf("{{.Values.%s.%s}}", key, AccessMode)))
 	}
 	if pvcspec.Resources.Requests != nil {
 		//TODO sauman
@@ -613,13 +614,13 @@ func generatePersistentVolumeClaimSpec(pvcspec kapi.PersistentVolumeClaimSpec, k
 	return pvcspec
 }
 
-func generatePersistentVolumeSpec(spec kapi.PersistentVolumeSpec, key string, value map[string]interface{}) kapi.PersistentVolumeSpec {
+func generatePersistentVolumeSpec(spec apiv1.PersistentVolumeSpec, key string, value map[string]interface{}) apiv1.PersistentVolumeSpec {
 	value[ReclaimPolicy] = spec.PersistentVolumeReclaimPolicy
-	spec.PersistentVolumeReclaimPolicy = kapi.PersistentVolumeReclaimPolicy(fmt.Sprintf("{{.Values.%s.%s}}", key, ReclaimPolicy))
+	spec.PersistentVolumeReclaimPolicy = apiv1.PersistentVolumeReclaimPolicy(fmt.Sprintf("{{.Values.%s.%s}}", key, ReclaimPolicy))
 	if len(spec.AccessModes) != 0 {
 		value[AccessMode] = spec.AccessModes[0] //TODO sauman (multiple access mode)
 		spec.AccessModes = nil
-		spec.AccessModes = append(spec.AccessModes, kapi.PersistentVolumeAccessMode(fmt.Sprintf("{{.Values.%s.%s}}", key, AccessMode)))
+		spec.AccessModes = append(spec.AccessModes, apiv1.PersistentVolumeAccessMode(fmt.Sprintf("{{.Values.%s.%s}}", key, AccessMode)))
 	}
 	return spec
 }
