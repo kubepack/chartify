@@ -1,0 +1,35 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: '{{.Release.Name}}-nginx'
+    chart: '{{.Chart.Name}}-{{.Chart.Version}}'
+    heritage: '{{.Release.Service}}'
+    release: '{{.Release.Name}}'
+  name: '{{ template "fullname" . }}-deployment-nginx'
+  namespace: '{{.Values.deploymentnginx.namespace}}'
+spec:
+  replicas: {{.Values.deploymentnginx.replicas}}
+  selector:
+    matchLabels:
+      app: '{{.Release.Name}}-nginx'
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: '{{.Values.deploymentnginx.deploymentStrategy}}'
+  template:
+    metadata:
+      labels:
+        app: '{{.Release.Name}}-nginx'
+    spec:
+      containers:
+      - image: '{{.Values.deploymentnginx.nginx.image}}:{{.Values.deploymentnginx.nginx.imageTag}}'
+        imagePullPolicy: '{{.Values.deploymentnginx.nginx.imagePullPolicy}}'
+        name: nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP
+      imagePullSecrets:
+      - name: mypullsecret
+      restartPolicy: '{{.Values.deploymentnginx.restartPolicy}}'

@@ -13,6 +13,6 @@ spec:
     protocol: TCP
     targetPort: 9376
   selector:
-    app: example
+    app: '{{.Release.Name}}-example'
   sessionAffinity: '{{.Values.myapp.sessionAffinity}}'
   type: '{{.Values.myapp.serviceType}}'
