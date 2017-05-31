@@ -1,0 +1,9 @@
+deploymentStrategy: RollingUpdate
+imagePullSecrets: mypullsecret
+namespace: default
+nginx:
+  image: nginx
+  imagePullPolicy: IfNotPresent
+  imageTag: 1.7.9
+replicas: 3
+restartPolicy: Always

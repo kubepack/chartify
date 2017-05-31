@@ -9,7 +9,7 @@ metadata:
   name: '{{ template "fullname" . }}-nginx'
   namespace: '{{.Values.nginx.namespace}}'
 spec:
-  replicas: 3
+  replicas: {{.Values.nginx.replicas}}
   selector:
     app: nginx
   template:

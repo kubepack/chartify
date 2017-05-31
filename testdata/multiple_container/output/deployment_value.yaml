@@ -1,0 +1,7 @@
+replicas: 1
+testnginx:
+  image: nginx
+  imageTag: latest
+testredis:
+  image: redis
+  imageTag: latest

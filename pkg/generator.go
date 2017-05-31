@@ -8,17 +8,19 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/appscode/go/encoding/yaml"
 	ylib "github.com/ghodss/yaml"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	apiv1 "k8s.io/client-go/pkg/api/v1"
+	apps "k8s.io/client-go/pkg/apis/apps/v1beta1"
+	batch "k8s.io/client-go/pkg/apis/batch/v1"
+	extensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	storage "k8s.io/client-go/pkg/apis/storage/v1"
 	"k8s.io/helm/pkg/proto/hapi/chart"
-	kapi "k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/unversioned"
-	"k8s.io/kubernetes/pkg/apis/apps"
-	"k8s.io/kubernetes/pkg/apis/batch"
-	kext "k8s.io/kubernetes/pkg/apis/extensions"
-	"k8s.io/kubernetes/pkg/apis/storage"
-	"k8s.io/kubernetes/pkg/types"
-	"k8s.io/kubernetes/pkg/util/yaml"
 )
 
 type Generator struct {
@@ -62,7 +64,7 @@ func (g Generator) Create() (string, error) {
 			log.Fatal(err)
 		}
 
-		var objMeta unversioned.TypeMeta
+		var objMeta v1.TypeMeta
 		if err := json.Unmarshal(kubeJson, &objMeta); err != nil {
 			log.Fatal(err)
 		}
@@ -70,7 +72,7 @@ func (g Generator) Create() (string, error) {
 		values := valueFileGenerator{}
 		var template, templateName string
 		if objMeta.Kind == "Pod" {
-			pod := kapi.Pod{}
+			pod := apiv1.Pod{}
 			if err := json.Unmarshal(kubeJson, &pod); err != nil {
 				log.Fatal(err)
 			}
@@ -80,7 +82,7 @@ func (g Generator) Create() (string, error) {
 			values.MergeInto(valueFile, generateSafeKey(name))
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "ReplicationController" {
-			rc := kapi.ReplicationController{}
+			rc := apiv1.ReplicationController{}
 			if err := json.Unmarshal(kubeJson, &rc); err != nil {
 				log.Fatal(err)
 			}
@@ -90,7 +92,7 @@ func (g Generator) Create() (string, error) {
 			values.MergeInto(valueFile, generateSafeKey(name))
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "Deployment" {
-			deployment := kext.Deployment{}
+			deployment := extensions.Deployment{}
 			if err := json.Unmarshal(kubeJson, &deployment); err != nil {
 				log.Fatal(err)
 			}
@@ -110,7 +112,7 @@ func (g Generator) Create() (string, error) {
 			values.MergeInto(valueFile, generateSafeKey(name))
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "DaemonSet" {
-			daemonset := kext.DaemonSet{}
+			daemonset := extensions.DaemonSet{}
 			if err := json.Unmarshal(kubeJson, &daemonset); err != nil {
 				log.Fatal(err)
 			}
@@ -120,7 +122,7 @@ func (g Generator) Create() (string, error) {
 			values.MergeInto(valueFile, generateSafeKey(name))
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "ReplicaSet" {
-			rcSet := kext.ReplicaSet{}
+			rcSet := extensions.ReplicaSet{}
 			if err := json.Unmarshal(kubeJson, &rcSet); err != nil {
 				log.Fatal(err)
 			}
@@ -140,7 +142,7 @@ func (g Generator) Create() (string, error) {
 			values.MergeInto(valueFile, generateSafeKey(name))
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "Service" {
-			service := kapi.Service{}
+			service := apiv1.Service{}
 			if err := json.Unmarshal(kubeJson, &service); err != nil {
 				log.Fatal(err)
 			}
@@ -150,7 +152,7 @@ func (g Generator) Create() (string, error) {
 			values.MergeInto(valueFile, generateSafeKey(name))
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "ConfigMap" {
-			configMap := kapi.ConfigMap{}
+			configMap := apiv1.ConfigMap{}
 			if err := json.Unmarshal(kubeJson, &configMap); err != nil {
 				log.Fatal(err)
 			}
@@ -159,7 +161,7 @@ func (g Generator) Create() (string, error) {
 			template, values = configMapTemplate(configMap)
 			values.MergeInto(valueFile, generateSafeKey(name))
 		} else if objMeta.Kind == "Secret" {
-			secret := kapi.Secret{}
+			secret := apiv1.Secret{}
 			if err := json.Unmarshal(kubeJson, &secret); err != nil {
 				log.Fatal(err)
 			}
@@ -168,7 +170,7 @@ func (g Generator) Create() (string, error) {
 			template, values = secretTemplate(secret)
 			values.MergeInto(valueFile, generateSafeKey(name))
 		} else if objMeta.Kind == "PersistentVolumeClaim" {
-			pvc := kapi.PersistentVolumeClaim{}
+			pvc := apiv1.PersistentVolumeClaim{}
 			if err := json.Unmarshal(kubeJson, &pvc); err != nil {
 				log.Fatal(err)
 			}
@@ -177,7 +179,7 @@ func (g Generator) Create() (string, error) {
 			template, values = pvcTemplate(pvc)
 			persistence = addPersistence(persistence, values.persistence)
 		} else if objMeta.Kind == "PersistentVolume" {
-			pv := kapi.PersistentVolume{}
+			pv := apiv1.PersistentVolume{}
 			if err := json.Unmarshal(kubeJson, &pv); err != nil {
 				log.Fatal(err)
 			}
@@ -216,12 +218,12 @@ func (g Generator) Create() (string, error) {
 	if err := ioutil.WriteFile(valueDir, []byte(valueFileData), 0644); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("CREATE : SUCCESSFULL")
+	fmt.Println("CREATE : SUCCESSFUL")
 	return cdir, nil
 }
 
-func cleanUpObjectMeta(m *kapi.ObjectMeta) {
-	var t unversioned.Time
+func cleanUpObjectMeta(m *metav1.ObjectMeta) {
+	var t v1.Time
 	m.GenerateName = ""
 	m.SelfLink = ""
 	m.UID = types.UID("")
@@ -241,8 +243,8 @@ func cleanUpDecorators(m map[string]string) {
 	delete(m, "pv.kubernetes.io/bound-by-controller")
 }
 
-func cleanUpPodSpec(p *kapi.PodSpec) {
-	p.DNSPolicy = kapi.DNSPolicy("")
+func cleanUpPodSpec(p *apiv1.PodSpec) {
+	p.DNSPolicy = apiv1.DNSPolicy("")
 	p.NodeName = ""
 	if p.ServiceAccountName == "default" {
 		p.ServiceAccountName = ""
@@ -258,7 +260,7 @@ func cleanUpPodSpec(p *kapi.PodSpec) {
 	}
 }
 
-func podTemplate(pod kapi.Pod) (string, valueFileGenerator) {
+func podTemplate(pod apiv1.Pod) (string, valueFileGenerator) {
 	cleanUpObjectMeta(&pod.ObjectMeta)
 	cleanUpPodSpec(&pod.Spec)
 	volumes := ""
@@ -289,7 +291,7 @@ func podTemplate(pod kapi.Pod) (string, valueFileGenerator) {
 	return template, data
 }
 
-func replicationControllerTemplate(rc kapi.ReplicationController) (string, valueFileGenerator) {
+func replicationControllerTemplate(rc apiv1.ReplicationController) (string, valueFileGenerator) {
 	cleanUpObjectMeta(&rc.ObjectMeta)
 	cleanUpPodSpec(&rc.Spec.Template.Spec)
 	volumes := ""
@@ -308,6 +310,9 @@ func replicationControllerTemplate(rc kapi.ReplicationController) (string, value
 		log.Fatal(err)
 	}
 	tempRc := removeEmptyFields(string(tempRcByte))
+
+	tempRc, value = generateTemplateReplicationCtrSpec(rc.Spec, tempRc, key, value)
+
 	template := ""
 	if len(volumes) != 0 {
 		template = addVolumeToTemplate(tempRc, volumes)
@@ -317,7 +322,7 @@ func replicationControllerTemplate(rc kapi.ReplicationController) (string, value
 	return template, valueFileGenerator{value: value, persistence: persistence}
 }
 
-func replicaSetTemplate(replicaSet kext.ReplicaSet) (string, valueFileGenerator) {
+func replicaSetTemplate(replicaSet extensions.ReplicaSet) (string, valueFileGenerator) {
 	cleanupForReplicaSets(&replicaSet)
 	volumes := ""
 	value := make(map[string]interface{}, 0)
@@ -339,6 +344,9 @@ func replicaSetTemplate(replicaSet kext.ReplicaSet) (string, valueFileGenerator)
 		log.Fatal(err)
 	}
 	tempReplicaSet := removeEmptyFields(string(tempRcSetByte))
+
+	tempReplicaSet, value = generateTemplateReplicaSetSpec(replicaSet.Spec, tempReplicaSet, key, value)
+
 	if len(volumes) != 0 {
 		template = addVolumeToTemplate(tempReplicaSet, volumes) // RC and replica_set has volume in same layer
 	} else {
@@ -350,7 +358,7 @@ func replicaSetTemplate(replicaSet kext.ReplicaSet) (string, valueFileGenerator)
 	}
 }
 
-func deploymentTemplate(deployment kext.Deployment) (string, valueFileGenerator) {
+func deploymentTemplate(deployment extensions.Deployment) (string, valueFileGenerator) {
 	cleanUpObjectMeta(&deployment.ObjectMeta)
 	cleanUpPodSpec(&deployment.Spec.Template.Spec)
 	cleanUpDecorators(deployment.ObjectMeta.Annotations)
@@ -368,7 +376,7 @@ func deploymentTemplate(deployment kext.Deployment) (string, valueFileGenerator)
 	if len(string(deployment.Spec.Strategy.Type)) != 0 {
 		if len(string(deployment.Spec.Strategy.Type)) != 0 {
 			value[DeploymentStrategy] = deployment.Spec.Strategy.Type
-			deployment.Spec.Strategy.Type = kext.DeploymentStrategyType(fmt.Sprintf("{{.Values.%s.%s}}", key, DeploymentStrategy))
+			deployment.Spec.Strategy.Type = extensions.DeploymentStrategyType(fmt.Sprintf("{{.Values.%s.%s}}", key, DeploymentStrategy))
 		}
 	}
 
@@ -383,15 +391,18 @@ func deploymentTemplate(deployment kext.Deployment) (string, valueFileGenerator)
 	}
 	tempDeployment := removeEmptyFields(string(tempDeploymentByte))
 
+	tempDeployment, value = generateTemplateDeplymentSpec(deployment.Spec, tempDeployment, key, value)
+
 	if len(volumes) != 0 {
 		template = addVolumeToTemplate(tempDeployment, volumes)
 	} else {
 		template = tempDeployment
 	}
+
 	return template, valueFileGenerator{value: value, persistence: persistence}
 }
 
-func daemonsetTemplate(daemonset kext.DaemonSet) (string, valueFileGenerator) {
+func daemonsetTemplate(daemonset extensions.DaemonSet) (string, valueFileGenerator) {
 	cleanUpObjectMeta(&daemonset.ObjectMeta)
 	cleanUpPodSpec(&daemonset.Spec.Template.Spec)
 	volumes := ""
@@ -493,7 +504,7 @@ func jobTemplate(job batch.Job) (string, valueFileGenerator) {
 
 }
 
-func serviceTemplate(svc kapi.Service) (string, valueFileGenerator) {
+func serviceTemplate(svc apiv1.Service) (string, valueFileGenerator) {
 	cleanUpObjectMeta(&svc.ObjectMeta)
 	value := make(map[string]interface{}, 0)
 	key := generateSafeKey(svc.ObjectMeta.Name)
@@ -503,6 +514,9 @@ func serviceTemplate(svc kapi.Service) (string, valueFileGenerator) {
 		svc.Spec.ClusterIP = ""
 	}
 	svc.Spec = generateServiceSpecTemplate(svc.Spec, key, value)
+	if svc.Spec.Selector != nil {
+		svc.Spec.Selector = modifySvcLabelSelector(svc.Spec.Selector)
+	}
 	svcData, err := ylib.Marshal(svc)
 	if err != nil {
 		log.Fatal(err)
@@ -511,7 +525,7 @@ func serviceTemplate(svc kapi.Service) (string, valueFileGenerator) {
 	return string(service), valueFileGenerator{value: value}
 }
 
-func configMapTemplate(configMap kapi.ConfigMap) (string, valueFileGenerator) {
+func configMapTemplate(configMap apiv1.ConfigMap) (string, valueFileGenerator) {
 	cleanUpObjectMeta(&configMap.ObjectMeta)
 	value := make(map[string]interface{}, 0)
 	key := generateSafeKey(configMap.ObjectMeta.Name)
@@ -530,7 +544,7 @@ func configMapTemplate(configMap kapi.ConfigMap) (string, valueFileGenerator) {
 	return string(data), valueFileGenerator{value: value}
 }
 
-func secretTemplate(secret kapi.Secret) (string, valueFileGenerator) {
+func secretTemplate(secret apiv1.Secret) (string, valueFileGenerator) {
 	cleanUpObjectMeta(&secret.ObjectMeta)
 	value := make(map[string]interface{}, 0)
 	secretDataMap := make(map[string]interface{}, 0)
@@ -538,13 +552,20 @@ func secretTemplate(secret kapi.Secret) (string, valueFileGenerator) {
 	secret.ObjectMeta = generateObjectMetaTemplate(secret.ObjectMeta, key, value, secret.ObjectMeta.Name)
 	if len(secret.Data) != 0 {
 		for k, v := range secret.Data {
-			value[k] = v
-			secretDataMap[k] = (fmt.Sprintf("{{.Values.%s.%s}}", key, k))
+			if strings.HasPrefix(k, ".") {
+				// For values that starts with ".", the Values string get populated with ".." - error for helm
+				kmod := strings.Replace(k, ".", "", 1)
+				value[kmod] = v
+				secretDataMap[k] = (fmt.Sprintf("{{.Values.%s.%s}}", key, kmod))
+			} else {
+				value[k] = v
+				secretDataMap[k] = (fmt.Sprintf("{{.Values.%s.%s}}", key, k))
+			}
 		}
 	}
 	secret.Data = nil
 	value[Type] = secret.Type
-	secret.Type = kapi.SecretType(fmt.Sprintf("{{.Values.%s.%s}}", key, Type))
+	secret.Type = apiv1.SecretType(fmt.Sprintf("{{.Values.%s.%s}}", key, Type))
 	secretDataByte, err := ylib.Marshal(secret)
 	if err != nil {
 		log.Fatal(err)
@@ -554,7 +575,7 @@ func secretTemplate(secret kapi.Secret) (string, valueFileGenerator) {
 	return secretData, valueFileGenerator{value: value}
 }
 
-func pvcTemplate(pvc kapi.PersistentVolumeClaim) (string, valueFileGenerator) {
+func pvcTemplate(pvc apiv1.PersistentVolumeClaim) (string, valueFileGenerator) {
 	cleanUpObjectMeta(&pvc.ObjectMeta)
 	cleanUpDecorators(pvc.ObjectMeta.Annotations)
 	tempValue := make(map[string]interface{}, 0)
@@ -574,7 +595,7 @@ func pvcTemplate(pvc kapi.PersistentVolumeClaim) (string, valueFileGenerator) {
 	return pvcTemplateData, valueFileGenerator{persistence: persistence}
 }
 
-func pvTemplate(pv kapi.PersistentVolume) (string, valueFileGenerator) {
+func pvTemplate(pv apiv1.PersistentVolume) (string, valueFileGenerator) {
 	cleanUpObjectMeta(&pv.ObjectMeta)
 	value := make(map[string]interface{}, 0)
 	key := generateSafeKey(pv.ObjectMeta.Name)
@@ -609,8 +630,16 @@ func addSecretData(secretData string, secretDataMap map[string]interface{}, key 
 	end := "{{ end }}"
 	data := ""
 	for k, v := range secretDataMap {
-		ifCondition := fmt.Sprintf("{{ if .Values.%s.%s }}", key, k)
-		data += fmt.Sprintf("  %s\n  %s: %s\n  %s\n  %s: %s\n  %s\n", ifCondition, k, v, elseCondition, k, elseAction, end)
+		if strings.HasPrefix(k, ".") {
+			// For values that starts with ".", the Values string get populated with ".." - error for helm
+			kmod := strings.Replace(k, ".", "", 1)
+			ifCondition := fmt.Sprintf("{{ if .Values.%s.%s }}", key, kmod)
+			data += fmt.Sprintf("  %s\n  %s: %s\n  %s\n  %s: %s\n  %s\n", ifCondition, k, v, elseCondition, k, elseAction, end)
+		} else {
+			ifCondition := fmt.Sprintf("{{ if .Values.%s.%s }}", key, k)
+			data += fmt.Sprintf("  %s\n  %s: %s\n  %s\n  %s: %s\n  %s\n", ifCondition, k, v, elseCondition, k, elseAction, end)
+		}
+
 	}
 	dataOfSecret := "data:" + "\n" + data
 	return (secretData + dataOfSecret)
@@ -668,7 +697,7 @@ func getObjectKindAndName(yamlData string) (string, string) {
 		log.Fatal("Name not found")
 	}
 	name := objMeta["name"]
-	var typeMeta unversioned.TypeMeta
+	var typeMeta v1.TypeMeta
 
 	err = json.Unmarshal(kubeJson, &typeMeta)
 	if err != nil {
@@ -681,7 +710,7 @@ func getObjectKindAndName(yamlData string) (string, string) {
 	return typeMeta.Kind, objName
 }
 
-func modifyLabelSelector(selector *unversioned.LabelSelector, templateLabels map[string]string, metaLabels map[string]string) {
+func modifyLabelSelector(selector *v1.LabelSelector, templateLabels map[string]string, metaLabels map[string]string) {
 	if len(selector.MatchLabels) == 0 {
 		return
 	}
@@ -700,7 +729,17 @@ func modifyLabelSelector(selector *unversioned.LabelSelector, templateLabels map
 	}
 }
 
-func cleanupForReplicaSets(rcSet *kext.ReplicaSet) {
+func modifySvcLabelSelector(selector map[string]string) map[string]string {
+
+	for k, v := range selector {
+
+		selector[k] = "{{.Release.Name}}-" + v
+	}
+
+	return selector
+}
+
+func cleanupForReplicaSets(rcSet *extensions.ReplicaSet) {
 	cleanUpObjectMeta(&rcSet.ObjectMeta)
 	cleanUpPodSpec(&rcSet.Spec.Template.Spec)
 	cleanUpDecorators(rcSet.ObjectMeta.Annotations)

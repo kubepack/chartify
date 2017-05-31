@@ -10,7 +10,7 @@ metadata:
   name: '{{ template "fullname" . }}-frontend'
   namespace: '{{.Values.frontend.namespace}}'
 spec:
-  replicas: 3
+  replicas: {{.Values.frontend.replicas}}
   selector:
     matchLabels:
       tier: '{{.Release.Name}}-frontend'

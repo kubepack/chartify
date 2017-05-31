@@ -1,0 +1,24 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    chart: '{{.Chart.Name}}-{{.Chart.Version}}'
+    heritage: '{{.Release.Service}}'
+    release: '{{.Release.Name}}'
+    run: '{{.Release.Name}}-test'
+  name: '{{ template "fullname" . }}-test'
+spec:
+  replicas: {{.Values.test.replicas}}
+  selector:
+    matchLabels:
+      run: '{{.Release.Name}}-test'
+  template:
+    metadata:
+      labels:
+        run: '{{.Release.Name}}-test'
+    spec:
+      containers:
+      - image: '{{.Values.test.testredis.image}}:{{.Values.test.testredis.imageTag}}'
+        name: testredis
+      - image: '{{.Values.test.testnginx.image}}:{{.Values.test.testnginx.imageTag}}'
+        name: testnginx
