@@ -641,7 +641,7 @@ func generatePersistentVolumeSpec(spec apiv1.PersistentVolumeSpec, key string, v
 func generateSafeKey(name string) string {
 	newName := ""
 	for _, v := range name {
-		if (v >= 'a' && v <= 'z') || (v >= 'A' && v <= 'Z') {
+		if (v >= 'a' && v <= 'z') || (v >= 'A' && v <= 'Z') || (v >= '0' && v <= '9') {
 			newName = newName + string(v)
 		}
 	}
