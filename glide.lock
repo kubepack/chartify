@@ -1,5 +1,5 @@
 hash: 5856b9242160c5d8d896701c7ca16e0d2c1584f433df4ff7e95e724804734418
-updated: 2017-05-30T23:25:53.801471941-07:00
+updated: 2017-05-31T00:23:20.338982133-07:00
 imports:
 - name: github.com/appscode/go
   version: 04abd631dc552c01c9448db0763611932590cbc4
@@ -103,7 +103,7 @@ imports:
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/yaml.v2
-  version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
+  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
 - name: k8s.io/apimachinery
   version: 75b8dd260ef0469d96d578705a87cffd0e09dab8
   subpackages:
