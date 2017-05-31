@@ -1,5 +1,5 @@
 hash: 5856b9242160c5d8d896701c7ca16e0d2c1584f433df4ff7e95e724804734418
-updated: 2017-05-30T04:51:21.934885845-07:00
+updated: 2017-05-30T20:41:04.512545516-07:00
 imports:
 - name: github.com/appscode/go
   version: 04abd631dc552c01c9448db0763611932590cbc4
@@ -65,9 +65,9 @@ imports:
 - name: github.com/PuerkitoBio/urlesc
   version: 5bd2802263f21d8788851d5305584c82a5c75d7e
 - name: github.com/spf13/cobra
-  version: e606913c4ee45fec232e67e70105fb6c866b95d9
+  version: 9c28e4bbd74e5c3ed7aacbc552b2cab7cfdfe744
 - name: github.com/spf13/pflag
-  version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
+  version: c7e63cf4530bcd3ba943729cee0efeff2ebea63f
 - name: github.com/ugorji/go
   version: ded73eae5db7e7a0ef6f55aace87a2873c5d2b74
   subpackages:
@@ -103,7 +103,7 @@ imports:
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/yaml.v2
-  version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
+  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
 - name: k8s.io/apimachinery
   version: 75b8dd260ef0469d96d578705a87cffd0e09dab8
   subpackages:
@@ -241,17 +241,3 @@ testImports:
   version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
   subpackages:
   - assert
-- name: k8s.io/kubernetes
-  version: d6f433224538d4f9ca2f7ae19b252e6fcb66a3ae
-  subpackages:
-  - pkg/api
-  - pkg/api/resource
-  - pkg/api/unversioned
-  - pkg/apis/apps
-  - pkg/apis/batch
-  - pkg/apis/extensions
-  - pkg/apis/storage
-  - pkg/conversion
-  - pkg/runtime
-  - pkg/types
-  - pkg/util/intstr
