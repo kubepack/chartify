@@ -11,7 +11,6 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
 	apiv1 "k8s.io/client-go/pkg/api/v1"
-	apiv1ref "k8s.io/client-go/pkg/api/v1/ref"
 	apps "k8s.io/client-go/pkg/apis/apps/v1beta1"
 	batch "k8s.io/client-go/pkg/apis/batch/v1"
 	extensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
@@ -105,7 +104,7 @@ func (ko KubeObjects) getPods(kubeClient clientset.Interface) []string {
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := apiv1ref.GetReference(api.Scheme, pod)
+		ref, err := apiv1.GetReference(api.Scheme, pod)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -133,7 +132,7 @@ func (ko KubeObjects) getReplicationControllers(kubeClient clientset.Interface) 
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := apiv1ref.GetReference(api.Scheme, rc)
+		ref, err := apiv1.GetReference(api.Scheme, rc)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -161,7 +160,7 @@ func (ko KubeObjects) getServices(kubeClient clientset.Interface) []string {
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := apiv1ref.GetReference(api.Scheme, service)
+		ref, err := apiv1.GetReference(api.Scheme, service)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -189,7 +188,7 @@ func (ko KubeObjects) getSecrets(kubeClient clientset.Interface) []string {
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := apiv1ref.GetReference(api.Scheme, secret)
+		ref, err := apiv1.GetReference(api.Scheme, secret)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -216,7 +215,7 @@ func (ko KubeObjects) getConfigMaps(kubeClient clientset.Interface) []string {
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := apiv1ref.GetReference(api.Scheme, configmap)
+		ref, err := apiv1.GetReference(api.Scheme, configmap)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -243,7 +242,7 @@ func (ko KubeObjects) getStatefulSets(kubeClient clientset.Interface) []string {
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := apiv1ref.GetReference(api.Scheme, statefulset)
+		ref, err := apiv1.GetReference(api.Scheme, statefulset)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -270,7 +269,7 @@ func (ko KubeObjects) getPersistentVolumes(kubeClient clientset.Interface) []str
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := apiv1ref.GetReference(api.Scheme, pv)
+		ref, err := apiv1.GetReference(api.Scheme, pv)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -297,7 +296,7 @@ func (ko KubeObjects) getPersistentVolumeClaims(kubeClient clientset.Interface) 
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := apiv1ref.GetReference(api.Scheme, pvc)
+		ref, err := apiv1.GetReference(api.Scheme, pvc)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -324,7 +323,7 @@ func (ko KubeObjects) getJobs(kubeClient clientset.Interface) []string {
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := apiv1ref.GetReference(api.Scheme, job)
+		ref, err := apiv1.GetReference(api.Scheme, job)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -352,7 +351,7 @@ func (ko KubeObjects) getDaemons(kubeClient clientset.Interface) []string {
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := apiv1ref.GetReference(api.Scheme, daemon)
+		ref, err := apiv1.GetReference(api.Scheme, daemon)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -381,7 +380,7 @@ func (ko KubeObjects) getDeployments(kubeClient clientset.Interface) []string {
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := apiv1ref.GetReference(api.Scheme, deployment)
+		ref, err := apiv1.GetReference(api.Scheme, deployment)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -410,7 +409,7 @@ func (ko KubeObjects) getReplicaSets(kubeClient clientset.Interface) []string {
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := apiv1ref.GetReference(api.Scheme, rs)
+		ref, err := apiv1.GetReference(api.Scheme, rs)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -438,7 +437,7 @@ func (ko KubeObjects) getStorageClasses(kubeClient clientset.Interface) []string
 		if err != nil {
 			log.Fatal(err)
 		}
-		ref, err := apiv1ref.GetReference(api.Scheme, storageClass)
+		ref, err := apiv1.GetReference(api.Scheme, storageClass)
 		if err != nil {
 			log.Fatal(err)
 		}
