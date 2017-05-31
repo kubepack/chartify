@@ -135,7 +135,6 @@ func generateTemplateForPodSpec(podSpec apiv1.PodSpec, key string, value map[str
 		imagePullSecretsObj := []apiv1.LocalObjectReference{}
 
 		for _, imagePullSecrets := range podSpec.ImagePullSecrets {
-			imagePullSecrets.Name = generateSafeKey(imagePullSecrets.Name)
 			value["imagePullSecrets"] = imagePullSecrets.Name
 			imagePullSecrets.Name = fmt.Sprintf("{{.Values.%s.%s}}", key, "imagePullSecrets")
 			imagePullSecretsObj = append(imagePullSecretsObj, apiv1.LocalObjectReference{Name: imagePullSecrets.Name})
