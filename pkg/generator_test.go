@@ -7,19 +7,18 @@ import (
 	"testing"
 
 	"github.com/ghodss/yaml"
-	ylib "github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
-	kubeapi "k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/apis/apps"
-	"k8s.io/kubernetes/pkg/apis/batch"
-	ext "k8s.io/kubernetes/pkg/apis/extensions"
-	"k8s.io/kubernetes/pkg/apis/storage"
+	apiv1 "k8s.io/client-go/pkg/api/v1"
+	apps "k8s.io/client-go/pkg/apis/apps/v1beta1"
+	batch "k8s.io/client-go/pkg/apis/batch/v1"
+	extensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	storage "k8s.io/client-go/pkg/apis/storage/v1"
 )
 
 func TestPodTemplate(t *testing.T) {
 	yamlFile, err := ioutil.ReadFile("../testdata/pod/input/pod.yaml")
 	assert.Nil(t, err)
-	pod := kubeapi.Pod{}
+	pod := apiv1.Pod{}
 	err = yaml.Unmarshal(yamlFile, &pod)
 	assert.Nil(t, err)
 	template, values := podTemplate(pod)
@@ -32,7 +31,7 @@ func TestPodTemplate(t *testing.T) {
 func TestReplicationControllerTemplate(t *testing.T) {
 	yamlFile, err := ioutil.ReadFile("../testdata/rc/input/rc.yaml")
 	assert.Nil(t, err)
-	rc := kubeapi.ReplicationController{}
+	rc := apiv1.ReplicationController{}
 	err = yaml.Unmarshal(yamlFile, &rc)
 	assert.Nil(t, err)
 	template, values := replicationControllerTemplate(rc)
@@ -45,7 +44,7 @@ func TestReplicationControllerTemplate(t *testing.T) {
 func TestReplicaSetTemplate(t *testing.T) {
 	yamlFile, err := ioutil.ReadFile("../testdata/replicaset/input/replicaset.yaml")
 	assert.Nil(t, err)
-	rcSet := ext.ReplicaSet{}
+	rcSet := extensions.ReplicaSet{}
 	err = yaml.Unmarshal(yamlFile, &rcSet)
 	assert.Nil(t, err)
 	template, values := replicaSetTemplate(rcSet)
@@ -71,7 +70,7 @@ func TestJobTemplate(t *testing.T) {
 func TestChartForConfigMap(t *testing.T) {
 	yamlFile, err := ioutil.ReadFile("../testdata/configmap/input/configmap.yaml")
 	assert.Nil(t, err)
-	configMap := kubeapi.ConfigMap{}
+	configMap := apiv1.ConfigMap{}
 	err = yaml.Unmarshal(yamlFile, &configMap)
 	assert.Nil(t, err)
 	template, values := configMapTemplate(configMap)
@@ -84,7 +83,7 @@ func TestChartForConfigMap(t *testing.T) {
 func TestDaemonsetTemplate(t *testing.T) {
 	yamlFile, err := ioutil.ReadFile("../testdata/daemon/input/daemon.yaml")
 	assert.Nil(t, err)
-	daemonset := ext.DaemonSet{}
+	daemonset := extensions.DaemonSet{}
 	err = yaml.Unmarshal(yamlFile, &daemonset)
 	assert.Nil(t, err)
 	template, values := daemonsetTemplate(daemonset)
@@ -97,7 +96,7 @@ func TestDaemonsetTemplate(t *testing.T) {
 func TestSecretTemplate(t *testing.T) {
 	yamlFile, err := ioutil.ReadFile("../testdata/secret/input/secret.yaml")
 	assert.Nil(t, err)
-	secret := kubeapi.Secret{}
+	secret := apiv1.Secret{}
 	err = yaml.Unmarshal(yamlFile, &secret)
 	assert.Nil(t, err)
 	template, values := secretTemplate(secret)
@@ -110,7 +109,7 @@ func TestSecretTemplate(t *testing.T) {
 func TestPVTemplate(t *testing.T) {
 	yamlFile, err := ioutil.ReadFile("../testdata/pv/input/pv.yaml")
 	assert.Nil(t, err)
-	pv := kubeapi.PersistentVolume{}
+	pv := apiv1.PersistentVolume{}
 	err = yaml.Unmarshal(yamlFile, &pv)
 	assert.Nil(t, err)
 	template, values := pvTemplate(pv)
@@ -123,7 +122,7 @@ func TestPVTemplate(t *testing.T) {
 func TestServiceTemplate(t *testing.T) {
 	yamlFile, err := ioutil.ReadFile("../testdata/service/input/service.yaml")
 	assert.Nil(t, err)
-	svc := kubeapi.Service{}
+	svc := apiv1.Service{}
 	err = yaml.Unmarshal(yamlFile, &svc)
 	assert.Nil(t, err)
 	template, values := serviceTemplate(svc)
@@ -136,7 +135,7 @@ func TestServiceTemplate(t *testing.T) {
 func TestPVCTemplate(t *testing.T) {
 	yamlFile, err := ioutil.ReadFile("../testdata/pvc/input/pvc.yaml")
 	assert.Nil(t, err)
-	pvc := kubeapi.PersistentVolumeClaim{}
+	pvc := apiv1.PersistentVolumeClaim{}
 	err = yaml.Unmarshal(yamlFile, &pvc)
 	assert.Nil(t, err)
 	template, values := pvcTemplate(pvc)
@@ -149,7 +148,7 @@ func TestPVCTemplate(t *testing.T) {
 func TestDeploymentTemplate(t *testing.T) {
 	yamlFile, err := ioutil.ReadFile("../testdata/deployment/input/deployment.yaml")
 	assert.Nil(t, err)
-	deployment := ext.Deployment{}
+	deployment := extensions.Deployment{}
 	err = yaml.Unmarshal(yamlFile, &deployment)
 	assert.Nil(t, err)
 	template, values := deploymentTemplate(deployment)
@@ -188,7 +187,7 @@ func TestStatefulsetTemplate(t *testing.T) {
 func TestServiceTemplateWithClusterIP(t *testing.T) {
 	yamlFile, err := ioutil.ReadFile("../testdata/service_clusterIP/input/service.yaml")
 	assert.Nil(t, err)
-	svc := kubeapi.Service{}
+	svc := apiv1.Service{}
 	err = yaml.Unmarshal(yamlFile, &svc)
 	assert.Nil(t, err)
 	template, values := serviceTemplate(svc)
@@ -224,7 +223,7 @@ func TestChartForVolume(t *testing.T) {
 func TestChartForMultipleContainer(t *testing.T) {
 	yamlFile, err := ioutil.ReadFile("../testdata/multiple_container/input/deployment.yaml")
 	assert.Nil(t, err)
-	deployment := ext.Deployment{}
+	deployment := extensions.Deployment{}
 	err = yaml.Unmarshal(yamlFile, &deployment)
 	assert.Nil(t, err)
 	template, values := deploymentTemplate(deployment)
@@ -237,7 +236,7 @@ func TestChartForMultipleContainer(t *testing.T) {
 func TestDeploymentSecretsTemplate(t *testing.T) {
 	yamlFile, err := ioutil.ReadFile("../testdata/deployment_pullsecret/input/deployment.yaml")
 	assert.Nil(t, err)
-	deployment := ext.Deployment{}
+	deployment := extensions.Deployment{}
 	err = yaml.Unmarshal(yamlFile, &deployment)
 	assert.Nil(t, err)
 	template, values := deploymentTemplate(deployment)
@@ -248,7 +247,7 @@ func TestDeploymentSecretsTemplate(t *testing.T) {
 
 	secretyamlFile, err := ioutil.ReadFile("../testdata/deployment_pullsecret/input/secret.yaml")
 	assert.Nil(t, err)
-	secret := kubeapi.Secret{}
+	secret := apiv1.Secret{}
 	err = yaml.Unmarshal(secretyamlFile, &secret)
 	assert.Nil(t, err)
 	secrettemplate, secretvalues := secretTemplate(secret)
@@ -259,7 +258,7 @@ func TestDeploymentSecretsTemplate(t *testing.T) {
 }
 
 func valueChecker(t *testing.T, expectedPath string, value map[string]interface{}) {
-	valuesInfo, err := ylib.Marshal(value)
+	valuesInfo, err := yaml.Marshal(value)
 	assert.Nil(t, err)
 	expectedValues, err := ioutil.ReadFile(expectedPath)
 	assert.Nil(t, err)

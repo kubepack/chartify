@@ -37,3 +37,4 @@ spec:
       name: default-token-16cwy
       readOnly: true
   restartPolicy: '{{.Values.pod.restartPolicy}}'
+  serviceAccount: default

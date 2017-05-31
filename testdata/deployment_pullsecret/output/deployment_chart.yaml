@@ -31,5 +31,5 @@ spec:
         - containerPort: 80
           protocol: TCP
       imagePullSecrets:
-      - name: mypullsecret
+      - name: '{{.Values.deploymentnginx.imagePullSecrets}}'
       restartPolicy: '{{.Values.deploymentnginx.restartPolicy}}'
