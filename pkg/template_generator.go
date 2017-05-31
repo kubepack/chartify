@@ -135,7 +135,11 @@ func generateTemplateForPodSpec(podSpec apiv1.PodSpec, key string, value map[str
 		imagePullSecretsObj := []apiv1.LocalObjectReference{}
 
 		for _, imagePullSecrets := range podSpec.ImagePullSecrets {
-			value["imagePullSecrets"] = imagePullSecrets.Name
+			if checkIfNameExist(imagePullSecrets.Name, "Secret") {
+				value["imagePullSecrets"] = fmt.Sprintf(`{{ template "fullname" . }}-%s`, imagePullSecrets.Name)
+			} else {
+				value["imagePullSecrets"] = imagePullSecrets.Name
+			}
 			secName := fmt.Sprintf("{{.Values.%s.%s}}", key, "imagePullSecrets")
 			imagePullSecretsObj = append(imagePullSecretsObj, apiv1.LocalObjectReference{Name: secName})
 		}
