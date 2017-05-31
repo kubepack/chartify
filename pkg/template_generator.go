@@ -131,6 +131,19 @@ func generateTemplateForPodSpec(podSpec apiv1.PodSpec, key string, value map[str
 		podSpec.RestartPolicy = apiv1.RestartPolicy(fmt.Sprintf("{{.Values.%s.%s}}", key, RestartPolicy))
 	}
 
+	if len(podSpec.ImagePullSecrets) != 0 {
+		imagePullSecretsObj := []apiv1.LocalObjectReference{}
+
+		for _, imagePullSecrets := range podSpec.ImagePullSecrets {
+			value["imagePullSecrets"] = imagePullSecrets.Name
+			secName := fmt.Sprintf("{{.Values.%s.%s}}", key, "imagePullSecrets")
+			imagePullSecretsObj = append(imagePullSecretsObj, apiv1.LocalObjectReference{Name: secName})
+		}
+
+		podSpec.ImagePullSecrets = imagePullSecretsObj
+
+	}
+
 	return podSpec
 }
 

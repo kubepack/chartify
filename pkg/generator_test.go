@@ -233,6 +233,30 @@ func TestChartForMultipleContainer(t *testing.T) {
 	valueChecker(t, "../testdata/multiple_container/output/deployment_value.yaml", values.value)
 }
 
+func TestDeploymentSecretsTemplate(t *testing.T) {
+	yamlFile, err := ioutil.ReadFile("../testdata/deployment_pullsecret/input/deployment.yaml")
+	assert.Nil(t, err)
+	deployment := extensions.Deployment{}
+	err = yaml.Unmarshal(yamlFile, &deployment)
+	assert.Nil(t, err)
+	template, values := deploymentTemplate(deployment)
+	expectedTemplate, err := ioutil.ReadFile("../testdata/deployment_pullsecret/output/deployment_chart.yaml")
+	assert.Nil(t, err)
+	assert.Equal(t, string(expectedTemplate), string(template))
+	valueChecker(t, "../testdata/deployment_pullsecret/output/deployment_value.yaml", values.value)
+
+	secretyamlFile, err := ioutil.ReadFile("../testdata/deployment_pullsecret/input/secret.yaml")
+	assert.Nil(t, err)
+	secret := apiv1.Secret{}
+	err = yaml.Unmarshal(secretyamlFile, &secret)
+	assert.Nil(t, err)
+	secrettemplate, secretvalues := secretTemplate(secret)
+	secretexpectedTemplate, err := ioutil.ReadFile("../testdata/deployment_pullsecret/output/secret_chart.yaml")
+	assert.Nil(t, err)
+	assert.Equal(t, string(secretexpectedTemplate), string(secrettemplate))
+	valueChecker(t, "../testdata/deployment_pullsecret/output/secret_value.yaml", secretvalues.value)
+}
+
 func valueChecker(t *testing.T, expectedPath string, value map[string]interface{}) {
 	valuesInfo, err := yaml.Marshal(value)
 	assert.Nil(t, err)
