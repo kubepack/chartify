@@ -1,5 +1,5 @@
 deploymentStrategy: RollingUpdate
-imagePullSecrets: mypullsecret
+imagePullSecrets: my-pull-secret
 namespace: default
 nginx:
   image: nginx
