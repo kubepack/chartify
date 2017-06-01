@@ -8,7 +8,9 @@ import (
 	"log"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/ghodss/yaml"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -643,16 +645,24 @@ func generatePersistentVolumeSpec(spec apiv1.PersistentVolumeSpec, key string, v
 }
 
 func generateSafeKey(name string) string {
-	newName := ""
-	for _, v := range name {
-		if (v >= 'a' && v <= 'z') || (v >= 'A' && v <= 'Z') {
-			newName = newName + string(v)
+	var buf bytes.Buffer
+	for _, r := range name {
+		switch true {
+		case unicode.IsLower(r):
+			buf.WriteRune(r)
+		case unicode.IsDigit(r):
+			buf.WriteRune(r)
+		case unicode.IsUpper(r):
+			buf.WriteRune(unicode.ToLower(r))
+		default:
+			// skip
 		}
 	}
-	if len(newName) == 0 {
-		newName = name
+	key := buf.String()
+	if _, err := strconv.Atoi(key); err == nil {
+		return "_" + key
 	}
-	return newName
+	return key
 }
 
 func VolumeTemplateForElement(volumeName string, element string) string {
