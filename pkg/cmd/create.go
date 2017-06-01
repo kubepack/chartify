@@ -14,6 +14,7 @@ func NewCmdCreate() *cobra.Command {
 	var (
 		kubeDir  string
 		chartDir string
+		preserveName bool
 	)
 	ko := pkg.KubeObjects{}
 
@@ -29,6 +30,7 @@ func NewCmdCreate() *cobra.Command {
 				Location:  checkLocation(chartDir),
 				ChartName: args[0],
 			}
+			pkg.PreserveName = preserveName
 			if len(kubeDir) != 0 {
 				gen.YamlFiles = pkg.ReadLocalFiles(kubeDir)
 			} else {
@@ -44,6 +46,7 @@ func NewCmdCreate() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&kubeDir, "kube-dir", "", "Specify the directory of the yaml files for Kubernetes objects")
 	cmd.Flags().StringVar(&chartDir, "chart-dir", "charts", "Specify the location where charts will be created")
+	cmd.Flags().BoolVar(&preserveName, "preserve-name", false, "Specify if you want to preserve resources name from input yaml true/false (default: false)")
 	cmd.Flags().StringSliceVar(&ko.ConfigMaps, "configmaps", ko.ConfigMaps, "Specify the names of configmaps(configmap@namespace) to include in chart")
 	cmd.Flags().StringSliceVar(&ko.Daemons, "daemons", ko.Daemons, "Specify the names of daemons(daemon@namespace) to include in chart")
 	cmd.Flags().StringSliceVar(&ko.Deployments, "deployments", ko.Deployments, "Specify the names of deployments(deployments@namespace) to include in chart")

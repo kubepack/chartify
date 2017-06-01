@@ -23,7 +23,7 @@ spec:
       containers:
       - env:
         - name: GET_HOSTS_FROM
-          value: '{{.Values.frontend.phpredis.GETHOSTSFROM}}'
+          value: '{{.Values.frontend.phpredis.gethostsfrom}}'
         image: '{{.Values.frontend.phpredis.image}}:{{.Values.frontend.phpredis.imageTag}}'
         imagePullPolicy: '{{.Values.frontend.phpredis.imagePullPolicy}}'
         name: php-redis
