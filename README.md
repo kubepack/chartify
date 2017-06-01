@@ -38,6 +38,7 @@ chartify create NAME [FLAGS]
       --services stringSlice         Specify the names of services(service@namespace) to include in chart
       --statefulsets stringSlice     Specify the names of statefulsets(statefulset@namespace) to include in chart
       --storageclasses stringSlice   Specify the names of storageclasses(storageclass@namespace) to include in chart
+      --preserve-name bool           Specify if you want to preserve resources name from input yaml true/false (default: false)
 ```
 
 ### Issues

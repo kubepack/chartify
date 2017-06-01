@@ -1,6 +1,6 @@
 namespace: default
 phpredis:
-  GETHOSTSFROM: dns
+  gethostsfrom: dns
   image: gcr.io/google_samples/gb-frontend
   imagePullPolicy: IfNotPresent
   imageTag: v3

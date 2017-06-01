@@ -19,12 +19,16 @@ import (
 	"k8s.io/helm/pkg/proto/hapi/chart"
 )
 
+var PreserveName bool
+
 func generateObjectMetaTemplate(objectMeta v1.ObjectMeta, key string, value map[string]interface{}, extraTagForName string) v1.ObjectMeta {
-	if len(objectMeta.Name) != 0 {
-		objectMeta.Name = fmt.Sprintf(`{{ template "fullname" . }}`)
-	}
-	if len(extraTagForName) != 0 {
-		objectMeta.Name = fmt.Sprintf("%s-%s", objectMeta.Name, extraTagForName)
+	if !PreserveName {
+		if len(objectMeta.Name) != 0 {
+			objectMeta.Name = fmt.Sprintf(`{{ template "fullname" . }}`)
+		}
+		if len(extraTagForName) != 0 {
+			objectMeta.Name = fmt.Sprintf("%s-%s", objectMeta.Name, extraTagForName)
+		}
 	}
 	if len(objectMeta.ClusterName) != 0 {
 		value[ClusterName] = objectMeta.ClusterName
