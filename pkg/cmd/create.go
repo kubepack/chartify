@@ -12,9 +12,10 @@ import (
 
 func NewCmdCreate() *cobra.Command {
 	var (
-		kubeDir  string
-		chartDir string
-		preserveName bool
+		kubeDir       string
+		chartDir      string
+		preserveName  bool
+		skipresources string
 	)
 	ko := pkg.KubeObjects{}
 
@@ -27,8 +28,9 @@ func NewCmdCreate() *cobra.Command {
 				os.Exit(1)
 			}
 			gen := pkg.Generator{
-				Location:  checkLocation(chartDir),
-				ChartName: args[0],
+				Location:      checkLocation(chartDir),
+				ChartName:     args[0],
+				SkipResources: skipresources,
 			}
 			pkg.PreserveName = preserveName
 			if len(kubeDir) != 0 {
@@ -47,6 +49,7 @@ func NewCmdCreate() *cobra.Command {
 	cmd.Flags().StringVar(&kubeDir, "kube-dir", "", "Specify the directory of the yaml files for Kubernetes objects")
 	cmd.Flags().StringVar(&chartDir, "chart-dir", "charts", "Specify the location where charts will be created")
 	cmd.Flags().BoolVar(&preserveName, "preserve-name", false, "Specify if you want to preserve resources name from input yaml true/false (default: false)")
+	cmd.Flags().StringVar(&skipresources, "skip-resources", "", "Specify if you want to skip resources from output chart (Secret/my-secret,Deployment/my-deployment)")
 	cmd.Flags().StringSliceVar(&ko.ConfigMaps, "configmaps", ko.ConfigMaps, "Specify the names of configmaps(configmap@namespace) to include in chart")
 	cmd.Flags().StringSliceVar(&ko.Daemons, "daemons", ko.Daemons, "Specify the names of daemons(daemon@namespace) to include in chart")
 	cmd.Flags().StringSliceVar(&ko.Deployments, "deployments", ko.Deployments, "Specify the names of deployments(deployments@namespace) to include in chart")
