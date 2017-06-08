@@ -12,9 +12,9 @@ import (
 
 func NewCmdCreate() *cobra.Command {
 	var (
-		kubeDir       string
-		chartDir      string
-		preserveName  bool
+		kubeDir  string
+		chartDir string
+		preserveName bool
 		skipresources string
 	)
 	ko := pkg.KubeObjects{}
