@@ -12,7 +12,6 @@ import (
 
 	"github.com/appscode/go/encoding/yaml"
 	ylib "github.com/ghodss/yaml"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	apiv1 "k8s.io/client-go/pkg/api/v1"
@@ -64,7 +63,7 @@ func (g Generator) Create() (string, error) {
 			log.Fatal(err)
 		}
 
-		var objMeta v1.TypeMeta
+		var objMeta metav1.TypeMeta
 		if err := json.Unmarshal(kubeJson, &objMeta); err != nil {
 			log.Fatal(err)
 		}
@@ -223,7 +222,7 @@ func (g Generator) Create() (string, error) {
 }
 
 func cleanUpObjectMeta(m *metav1.ObjectMeta) {
-	var t v1.Time
+	var t metav1.Time
 	m.GenerateName = ""
 	m.SelfLink = ""
 	m.UID = types.UID("")
@@ -697,7 +696,7 @@ func getObjectKindAndName(yamlData string) (string, string) {
 		log.Fatal("Name not found")
 	}
 	name := objMeta["name"]
-	var typeMeta v1.TypeMeta
+	var typeMeta metav1.TypeMeta
 
 	err = json.Unmarshal(kubeJson, &typeMeta)
 	if err != nil {
@@ -710,7 +709,7 @@ func getObjectKindAndName(yamlData string) (string, string) {
 	return typeMeta.Kind, objName
 }
 
-func modifyLabelSelector(selector *v1.LabelSelector, templateLabels map[string]string, metaLabels map[string]string) {
+func modifyLabelSelector(selector *metav1.LabelSelector, templateLabels map[string]string, metaLabels map[string]string) {
 	if len(selector.MatchLabels) == 0 {
 		return
 	}

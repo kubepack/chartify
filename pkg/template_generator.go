@@ -13,7 +13,7 @@ import (
 	"unicode"
 
 	"github.com/ghodss/yaml"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiv1 "k8s.io/client-go/pkg/api/v1"
 	extensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/helm/pkg/proto/hapi/chart"
@@ -21,7 +21,7 @@ import (
 
 var PreserveName bool
 
-func generateObjectMetaTemplate(objectMeta v1.ObjectMeta, key string, value map[string]interface{}, extraTagForName string) v1.ObjectMeta {
+func generateObjectMetaTemplate(objectMeta metav1.ObjectMeta, key string, value map[string]interface{}, extraTagForName string) metav1.ObjectMeta {
 	if !PreserveName {
 		if len(objectMeta.Name) != 0 {
 			objectMeta.Name = fmt.Sprintf(`{{ template "fullname" . }}`)

@@ -12,8 +12,8 @@ import (
 
 func NewCmdCreate() *cobra.Command {
 	var (
-		kubeDir  string
-		chartDir string
+		kubeDir      string
+		chartDir     string
 		preserveName bool
 	)
 	ko := pkg.KubeObjects{}
