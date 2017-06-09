@@ -23,13 +23,15 @@ import (
 )
 
 type Generator struct {
-	Location  string
-	ChartName string
-	YamlFiles []string
+	Location      string
+	ChartName     string
+	YamlFiles     []string
+	SkipResources string
 }
 
 var ChartObject map[string][]string
 var chnageObjectType = []string{"Secret", "Configmap", "PersistentVolume", "PersistentVolumeClaim"}
+var skipObjectTypes = []string{"Pod", "ReplicationController", "Deployment", "Job", "DaemonSet", "ReplicaSet", "StatefulSet", "Service", "ConfigMap", "Secret", "PersistentVolumeClaim", "PersistentVolume", "StorageClass"}
 
 func (g Generator) Create() (string, error) {
 	chartfile := chartMetaData(g.ChartName)
@@ -39,6 +41,12 @@ func (g Generator) Create() (string, error) {
 	fi, err := os.Stat(cdir)
 	if err == nil && !fi.IsDir() {
 		return cdir, fmt.Errorf("%s already exists and is not a directory", cdir)
+	}
+
+	skipObj := make(map[string][]string)
+
+	if len(g.SkipResources) != 0 {
+		skipObj = getSkipResourcesObject(g.SkipResources)
 	}
 	ChartObject = getInsideObjects(g.YamlFiles)
 	if err := os.MkdirAll(cdir, 0755); err != nil {
@@ -76,6 +84,11 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			name := pod.Name
+			if len(name) != 0 {
+				if (len(skipObj["Pod"]) != 0) && (skipObj["Pod"][0] == name) {
+					continue
+				}
+			}
 			templateName = filepath.Join(templateLocation, name+".pod.yaml")
 			template, values = podTemplate(pod)
 			values.MergeInto(valueFile, generateSafeKey(name))
@@ -86,6 +99,11 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			name := rc.Name
+			if len(name) != 0 {
+				if (len(skipObj["ReplicationController"]) != 0) && (skipObj["ReplicationController"][0] == name) {
+					continue
+				}
+			}
 			templateName = filepath.Join(templateLocation, name+".rc.yaml")
 			template, values = replicationControllerTemplate(rc)
 			values.MergeInto(valueFile, generateSafeKey(name))
@@ -96,6 +114,11 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			name := deployment.Name
+			if len(name) != 0 {
+				if (len(skipObj["Deployment"]) != 0) && (skipObj["Deployment"][0] == name) {
+					continue
+				}
+			}
 			templateName = filepath.Join(templateLocation, name+".deployment.yaml")
 			template, values = deploymentTemplate(deployment)
 			values.MergeInto(valueFile, generateSafeKey(name))
@@ -106,6 +129,11 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			name := job.Name
+			if len(name) != 0 {
+				if (len(skipObj["Job"]) != 0) && (skipObj["Job"][0] == name) {
+					continue
+				}
+			}
 			templateName = filepath.Join(templateLocation, name+".job.yaml")
 			template, values = jobTemplate(job)
 			values.MergeInto(valueFile, generateSafeKey(name))
@@ -116,6 +144,11 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			name := daemonset.Name
+			if len(name) != 0 {
+				if (len(skipObj["DaemonSet"]) != 0) && (skipObj["DaemonSet"][0] == name) {
+					continue
+				}
+			}
 			templateName = filepath.Join(templateLocation, name+".daemonset.yaml")
 			template, values = daemonsetTemplate(daemonset)
 			values.MergeInto(valueFile, generateSafeKey(name))
@@ -126,6 +159,11 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			name := rcSet.Name
+			if len(name) != 0 {
+				if (len(skipObj["ReplicaSet"]) != 0) && (skipObj["ReplicaSet"][0] == name) {
+					continue
+				}
+			}
 			templateName = filepath.Join(templateLocation, name+".rs.yaml")
 			template, values = replicaSetTemplate(rcSet)
 			values.MergeInto(valueFile, generateSafeKey(name))
@@ -136,6 +174,11 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			name := statefulset.Name
+			if len(name) != 0 {
+				if (len(skipObj["StatefulSet"]) != 0) && (skipObj["StatefulSet"][0] == name) {
+					continue
+				}
+			}
 			templateName = filepath.Join(templateLocation, name+".statefulset.yaml")
 			template, values = statefulsetTemplate(statefulset)
 			values.MergeInto(valueFile, generateSafeKey(name))
@@ -145,8 +188,14 @@ func (g Generator) Create() (string, error) {
 			if err := json.Unmarshal(kubeJson, &service); err != nil {
 				log.Fatal(err)
 			}
-			template, values = serviceTemplate(service)
+
 			name := service.Name
+			if len(name) != 0 {
+				if (len(skipObj["Service"]) != 0) && (skipObj["Service"][0] == name) {
+					continue
+				}
+			}
+			template, values = serviceTemplate(service)
 			templateName = filepath.Join(templateLocation, name+".svc.yaml")
 			values.MergeInto(valueFile, generateSafeKey(name))
 			persistence = addPersistence(persistence, values.persistence)
@@ -156,6 +205,11 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			name := configMap.Name
+			if len(name) != 0 {
+				if (len(skipObj["ConfigMap"]) != 0) && (skipObj["ConfigMap"][0] == name) {
+					continue
+				}
+			}
 			templateName = filepath.Join(templateLocation, name+".yaml")
 			template, values = configMapTemplate(configMap)
 			values.MergeInto(valueFile, generateSafeKey(name))
@@ -165,6 +219,11 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			name := secret.Name
+			if len(name) != 0 {
+				if (len(skipObj["Secret"]) != 0) && (skipObj["Secret"][0] == name) {
+					continue
+				}
+			}
 			templateName = filepath.Join(templateLocation, name+".secret.yaml")
 			template, values = secretTemplate(secret)
 			values.MergeInto(valueFile, generateSafeKey(name))
@@ -174,6 +233,11 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			name := pvc.Name
+			if len(name) != 0 {
+				if (len(skipObj["PersistentVolumeClaim"]) != 0) && (skipObj["PersistentVolumeClaim"][0] == name) {
+					continue
+				}
+			}
 			templateName = filepath.Join(templateLocation, name+".pvc.yaml")
 			template, values = pvcTemplate(pvc)
 			persistence = addPersistence(persistence, values.persistence)
@@ -183,6 +247,11 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			name := pv.Name
+			if len(name) != 0 {
+				if (len(skipObj["PersistentVolume"]) != 0) && (skipObj["PersistentVolume"][0] == name) {
+					continue
+				}
+			}
 			templateName = filepath.Join(templateLocation, name+".pv.yaml")
 			template, values = pvTemplate(pv)
 			values.MergeInto(valueFile, generateSafeKey(name))
@@ -192,6 +261,11 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			name := storageClass.Name
+			if len(name) != 0 {
+				if (len(skipObj["StorageClass"]) != 0) && (skipObj["StorageClass"][0] == name) {
+					continue
+				}
+			}
 			templateName = filepath.Join(templateLocation, name+".storage.yaml")
 			template, values = storageClassTemplate(storageClass)
 			values.MergeInto(valueFile, generateSafeKey(name))
@@ -668,6 +742,37 @@ func mapToValueMaker(mp map[string]string, value map[string]interface{}, key str
 	return mp
 }
 
+func getSkipResourcesObject(skipObjects string) map[string][]string {
+	obj := make(map[string][]string)
+	if len(skipObjects) != 0 {
+		strSplit := strings.Split(skipObjects, ",")
+		var rstypeExists bool = false
+		for _, sk := range strSplit {
+			sksplit := strings.Split(sk, "/")
+
+			kind, name := sksplit[0], sksplit[1]
+
+			rstypeExists = false
+			for _, t := range skipObjectTypes {
+				if kind == t {
+					rstypeExists = true
+				}
+			}
+
+			if rstypeExists {
+				if (len(kind) != 0) && (len(name) != 0) {
+					obj[kind] = append(obj[kind], name)
+				}
+			} else {
+				errString := "Resource type in --skip-resources: " + kind + " is incorrect. It should be from list: " + strings.Join(skipObjectTypes, ", ")
+				log.Fatal(errString)
+			}
+
+		}
+	}
+	return obj
+}
+
 func getInsideObjects(objects []string) map[string][]string {
 	obj := make(map[string][]string)
 	for _, v := range objects {
@@ -677,7 +782,9 @@ func getInsideObjects(objects []string) map[string][]string {
 				obj[kind] = append(obj[kind], name)
 			}
 		}
+
 	}
+
 	return obj
 }
 
