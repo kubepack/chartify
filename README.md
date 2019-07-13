@@ -1,5 +1,3 @@
-[![Go Report Card](https://goreportcard.com/badge/kubepack.dev/chartify)](https://goreportcard.com/report/kubepack.dev/chartify)
-
 [Website](https://appscode.com) • [Slack](https://slack.appscode.com) • [Twitter](https://twitter.com/AppsCodeHQ)
 
 # chartify
