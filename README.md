@@ -1,13 +1,13 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/appscode/chartify)](https://goreportcard.com/report/github.com/appscode/chartify)
+[![Go Report Card](https://goreportcard.com/badge/kubepack.dev/chartify)](https://goreportcard.com/report/kubepack.dev/chartify)
 
-[Website](https://appscode.com) • [Slack](https://slack.appscode.com) • [Forum](https://discuss.appscode.com) • [Twitter](https://twitter.com/AppsCodeHQ)
+[Website](https://appscode.com) • [Slack](https://slack.appscode.com) • [Twitter](https://twitter.com/AppsCodeHQ)
 
 # chartify
 Generate Helm Charts from Kubernetes api objects
 
 ## Installation
 ```go
-go get -u github.com/appscode/chartify
+go get -u kubepack.dev/chartify
 ```
 
 ## Usage

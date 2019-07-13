@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/appscode/chartify/pkg/cmd"
+	"kubepack.dev/chartify/pkg/cmd"
 	v "github.com/appscode/go/version"
 	"github.com/spf13/cobra"
 )

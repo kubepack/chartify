@@ -41,7 +41,7 @@ from collections import OrderedDict
 from os.path import expandvars
 
 
-libbuild.REPO_ROOT = expandvars('$GOPATH') + '/src/github.com/appscode/chartify'
+libbuild.REPO_ROOT = expandvars('$GOPATH') + '/src/kubepack.dev/chartify'
 BUILD_METADATA = libbuild.metadata(libbuild.REPO_ROOT)
 libbuild.BIN_MATRIX = {
     'chartify': {

@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/appscode/chartify/pkg"
+	"kubepack.dev/chartify/pkg"
 	"github.com/spf13/cobra"
 )
 
