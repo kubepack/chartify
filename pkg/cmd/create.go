@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"kubepack.dev/chartify/pkg"
 	"github.com/spf13/cobra"
+	"kubepack.dev/chartify/pkg"
 )
 
 func NewCmdCreate() *cobra.Command {
@@ -60,6 +60,7 @@ func NewCmdCreate() *cobra.Command {
 	cmd.Flags().StringSliceVar(&ko.Services, "services", ko.Services, "Specify the names of services(service@namespace) to include in chart")
 	cmd.Flags().StringSliceVar(&ko.StatefulSets, "statefulsets", ko.StatefulSets, "Specify the names of statefulsets(statefulset@namespace) to include in chart")
 	cmd.Flags().StringSliceVar(&ko.StorageClasses, "storageclasses", ko.StorageClasses, "Specify the names of storageclasses(storageclass@namespace) to include in chart")
+	cmd.Flags().StringSliceVar(&ko.HorizontalPodAutoscalers, "horizontalpodautoscalers", ko.HorizontalPodAutoscalers, "Specify the names of horizontalpodautoscalers(horizontalpodautoscaler@namespace) to include in chart")
 
 	return cmd
 }

@@ -18,19 +18,20 @@ import (
 )
 
 type KubeObjects struct {
-	ConfigMaps             []string
-	Deployments            []string
-	Daemons                []string
-	Jobs                   []string
-	PersistentVolumes      []string
-	PersistentVolumeClaims []string
-	Pods                   []string
-	ReplicaSets            []string
-	ReplicationControllers []string
-	Secrets                []string
-	Services               []string
-	StatefulSets           []string
-	StorageClasses         []string
+	ConfigMaps               []string
+	Deployments              []string
+	Daemons                  []string
+	Jobs                     []string
+	PersistentVolumes        []string
+	PersistentVolumeClaims   []string
+	Pods                     []string
+	ReplicaSets              []string
+	ReplicationControllers   []string
+	Secrets                  []string
+	Services                 []string
+	StatefulSets             []string
+	StorageClasses           []string
+	HorizontalPodAutoscalers []string
 }
 
 func (ko KubeObjects) Extract() []string {
@@ -92,6 +93,9 @@ func (ko KubeObjects) readKubernetesObjects(kubeClient clientset.Interface) []st
 	}
 	if len(ko.StorageClasses) != 0 {
 		yamlFiles = appendSlice(yamlFiles, ko.getStorageClasses(kubeClient))
+	}
+	if len(ko.HorizontalPodAutoscalers) != 0 {
+		yamlFiles = appendSlice(yamlFiles, ko.getHorizontalPodAutoscalers(kubeClient))
 	}
 	return yamlFiles
 }
@@ -457,6 +461,33 @@ func (ko KubeObjects) getStorageClasses(kubeClient clientset.Interface) []string
 
 	return storageFiles
 
+}
+
+func (ko KubeObjects) getHorizontalPodAutoscalers(kubeClient clientset.Interface) []string {
+	var horizontalPodAutoscalers []string
+	for _, v := range ko.HorizontalPodAutoscalers {
+		_, namespace := splitNamespace(v)
+		horizontalPodAutoscaler := kubeClient.AutoscalingV1().HorizontalPodAutoscalers(namespace)
+		scaler, _ := horizontalPodAutoscaler.List(metav1.ListOptions{})
+
+		for _, item := range scaler.Items {
+			if item.Kind == "" {
+				item.Kind = "HorizontalPodAutoscaler"
+			}
+
+			if item.APIVersion == "" {
+				item.APIVersion = makeAPIVersion(item.GetSelfLink())
+			}
+
+			dataByte, err := yaml.Marshal(item)
+			if err != nil {
+				log.Fatal(err)
+			}
+			horizontalPodAutoscalers = append(horizontalPodAutoscalers, string(dataByte))
+		}
+	}
+
+	return horizontalPodAutoscalers
 }
 
 func newKubeClient() (clientset.Interface, error) {
