@@ -202,8 +202,8 @@ func (g Generator) Create() (string, error) {
 				log.Fatal(err)
 			}
 			name := podAutoscaler.Name
-			templateName = filepath.Join(templateLocation, name+".job.yaml")
-			template, values = jobTemplate(podAutoscaler)
+			templateName = filepath.Join(templateLocation, name+".hpa.yaml")
+			template, values = horizontalPodAutoscaler(podAutoscaler)
 			values.MergeInto(valueFile, generateSafeKey(name))
 			persistence = addPersistence(persistence, values.persistence)
 		} else {
@@ -620,7 +620,30 @@ func pvTemplate(pv apiv1.PersistentVolume) (string, valueFileGenerator) {
 }
 
 func horizontalPodAutoscaler(horizontalPodAutoscaler v1.HorizontalPodAutoscaler) (string, valueFileGenerator) {
+	cleanUpObjectMeta(&horizontalPodAutoscaler.ObjectMeta)
+	cleanUpDecorators(horizontalPodAutoscaler.ObjectMeta.Annotations)
+	volumes := ""
+	value := make(map[string]interface{}, 0)
+	persistence := make(map[string]interface{}, 0)
+	key := generateSafeKey(horizontalPodAutoscaler.ObjectMeta.Name)
+	horizontalPodAutoscaler.ObjectMeta = generateObjectMetaTemplate(horizontalPodAutoscaler.ObjectMeta, key, value, horizontalPodAutoscaler.ObjectMeta.Name)
 
+	template := ""
+	tempDeploymentByte, err := ylib.Marshal(horizontalPodAutoscaler)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tempDeployment := removeEmptyFields(string(tempDeploymentByte))
+
+	tempDeployment, value = generateTemplateForHorizontalPodAutoscaler(horizontalPodAutoscaler.Spec, tempDeployment, key, value)
+
+	if len(volumes) != 0 {
+		template = addVolumeToTemplate(tempDeployment, volumes)
+	} else {
+		template = tempDeployment
+	}
+
+	return template, valueFileGenerator{value: value, persistence: persistence}
 }
 
 func storageClassTemplate(storageClass storage.StorageClass) (string, valueFileGenerator) {
