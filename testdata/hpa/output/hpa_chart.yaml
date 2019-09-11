@@ -1,0 +1,17 @@
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  labels:
+    chart: '{{.Chart.Name}}-{{.Chart.Version}}'
+    heritage: '{{.Release.Service}}'
+    release: '{{.Release.Name}}'
+  name: '{{ template "fullname" . }}-stage-hermes-tickets-api'
+  namespace: '{{.Values.stagehermesticketsapi.namespace}}'
+spec:
+  maxReplicas: {{.Values.stagehermesticketsapi.maxReplicas}}
+  minReplicas: {{.Values.stagehermesticketsapi.minReplicas}}
+  scaleTargetRef:
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    name: stage-hermes-tickets-api
+  targetCPUUtilizationPercentage: {{.Values.stagehermesticketsapi.targetCPUUtilizationPercentage}}

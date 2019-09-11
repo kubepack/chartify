@@ -1,0 +1,4 @@
+maxReplicas: 3
+minReplicas: 1
+namespace: hermes
+targetCPUUtilizationPercentage: 50

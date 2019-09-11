@@ -1,0 +1,20 @@
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  creationTimestamp: "2019-09-04T11:11:51Z"
+  name: stage-hermes-tickets-api
+  namespace: hermes
+  resourceVersion: "73286047"
+  selfLink: /apis/autoscaling/v1/namespaces/hermes/horizontalpodautoscalers/stage-hermes-tickets-api
+  uid: cbc5d01c-cf04-11e9-bd9d-00155d507107
+spec:
+  maxReplicas: 3
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    name: stage-hermes-tickets-api
+  targetCPUUtilizationPercentage: 50
+status:
+  currentReplicas: 1
+  desiredReplicas: 0
