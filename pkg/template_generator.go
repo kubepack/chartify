@@ -167,7 +167,7 @@ func generateTemplateForHorizontalPodAutoscaler(hpaSpec v1.HorizontalPodAutoscal
 
 	if hpaSpec.TargetCPUUtilizationPercentage != nil {
 		templateHpa = updateIntParamAsStringInTemplate(templateHpa, key, "targetCPUUtilizationPercentage")
-		value[TargetCPUUtilizationPercentage] = hpaSpec.MaxReplicas
+		value[TargetCPUUtilizationPercentage] = hpaSpec.TargetCPUUtilizationPercentage
 	}
 
 	return templateHpa, value
