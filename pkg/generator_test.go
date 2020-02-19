@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/client-go/pkg/api/v1"
 	apps "k8s.io/client-go/pkg/apis/apps/v1beta1"
+	v1 "k8s.io/client-go/pkg/apis/autoscaling/v1"
 	batch "k8s.io/client-go/pkg/apis/batch/v1"
 	extensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	storage "k8s.io/client-go/pkg/apis/storage/v1"
@@ -255,6 +256,19 @@ func TestDeploymentSecretsTemplate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, string(secretexpectedTemplate), string(secrettemplate))
 	valueChecker(t, "../testdata/deployment_pullsecret/output/secret_value.yaml", secretvalues.value)
+}
+
+func TestHorizontalPodAutoscalerTemplate(t *testing.T) {
+	yamlFile, err := ioutil.ReadFile("../testdata/hpa/input/hpa.yaml")
+	assert.Nil(t, err)
+	hpa := v1.HorizontalPodAutoscaler{}
+	err = yaml.Unmarshal(yamlFile, &hpa)
+	assert.Nil(t, err)
+	template, values := horizontalPodAutoscaler(hpa)
+	expectedTemplate, err := ioutil.ReadFile("../testdata/hpa/output/hpa_chart.yaml")
+	assert.Nil(t, err)
+	assert.Equal(t, string(expectedTemplate), string(template))
+	valueChecker(t, "../testdata/hpa/output/hpa_value.yaml", values.value)
 }
 
 func valueChecker(t *testing.T, expectedPath string, value map[string]interface{}) {

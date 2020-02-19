@@ -15,6 +15,7 @@ import (
 	"github.com/ghodss/yaml"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiv1 "k8s.io/client-go/pkg/api/v1"
+	v1 "k8s.io/client-go/pkg/apis/autoscaling/v1"
 	extensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 )
@@ -151,6 +152,25 @@ func generateTemplateForPodSpec(podSpec apiv1.PodSpec, key string, value map[str
 	}
 
 	return podSpec
+}
+
+func generateTemplateForHorizontalPodAutoscaler(hpaSpec v1.HorizontalPodAutoscalerSpec, hpaSpecStr, key string, value map[string]interface{}) (string, map[string]interface{}) {
+	templateHpa := hpaSpecStr
+
+	if hpaSpec.MinReplicas != nil {
+		templateHpa = updateIntParamAsStringInTemplate(templateHpa, key, "minReplicas")
+		value[MinReplicas] = hpaSpec.MinReplicas
+	}
+
+	templateHpa = updateIntParamAsStringInTemplate(templateHpa, key, "maxReplicas")
+	value[MaxReplicas] = hpaSpec.MaxReplicas
+
+	if hpaSpec.TargetCPUUtilizationPercentage != nil {
+		templateHpa = updateIntParamAsStringInTemplate(templateHpa, key, "targetCPUUtilizationPercentage")
+		value[TargetCPUUtilizationPercentage] = hpaSpec.TargetCPUUtilizationPercentage
+	}
+
+	return templateHpa, value
 }
 
 func generateTemplateForVolume(volumes []apiv1.Volume, key string, value map[string]interface{}) (string, map[string]interface{}) {

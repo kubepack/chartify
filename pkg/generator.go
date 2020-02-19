@@ -16,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	apiv1 "k8s.io/client-go/pkg/api/v1"
 	apps "k8s.io/client-go/pkg/apis/apps/v1beta1"
+	v1 "k8s.io/client-go/pkg/apis/autoscaling/v1"
 	batch "k8s.io/client-go/pkg/apis/batch/v1"
 	extensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	storage "k8s.io/client-go/pkg/apis/storage/v1"
@@ -195,6 +196,16 @@ func (g Generator) Create() (string, error) {
 			templateName = filepath.Join(templateLocation, name+".storage.yaml")
 			template, values = storageClassTemplate(storageClass)
 			values.MergeInto(valueFile, generateSafeKey(name))
+		} else if objMeta.Kind == "HorizontalPodAutoscaler" {
+			podAutoscaler := v1.HorizontalPodAutoscaler{}
+			if err := json.Unmarshal(kubeJson, &podAutoscaler); err != nil {
+				log.Fatal(err)
+			}
+			name := podAutoscaler.Name
+			templateName = filepath.Join(templateLocation, name+".hpa.yaml")
+			template, values = horizontalPodAutoscaler(podAutoscaler)
+			values.MergeInto(valueFile, generateSafeKey(name))
+			persistence = addPersistence(persistence, values.persistence)
 		} else {
 			fmt.Printf("%v is not supported. Please add manually. Consider filing bug here: https://github.com/kubepack/chartify/issues", objMeta.Kind)
 		}
@@ -606,6 +617,33 @@ func pvTemplate(pv apiv1.PersistentVolume) (string, valueFileGenerator) {
 	}
 	temp := removeEmptyFields(string(pvData))
 	return string(temp), valueFileGenerator{value: value}
+}
+
+func horizontalPodAutoscaler(horizontalPodAutoscaler v1.HorizontalPodAutoscaler) (string, valueFileGenerator) {
+	cleanUpObjectMeta(&horizontalPodAutoscaler.ObjectMeta)
+	cleanUpDecorators(horizontalPodAutoscaler.ObjectMeta.Annotations)
+	volumes := ""
+	value := make(map[string]interface{}, 0)
+	persistence := make(map[string]interface{}, 0)
+	key := generateSafeKey(horizontalPodAutoscaler.ObjectMeta.Name)
+	horizontalPodAutoscaler.ObjectMeta = generateObjectMetaTemplate(horizontalPodAutoscaler.ObjectMeta, key, value, horizontalPodAutoscaler.ObjectMeta.Name)
+
+	template := ""
+	tempDeploymentByte, err := ylib.Marshal(horizontalPodAutoscaler)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tempDeployment := removeEmptyFields(string(tempDeploymentByte))
+
+	tempDeployment, value = generateTemplateForHorizontalPodAutoscaler(horizontalPodAutoscaler.Spec, tempDeployment, key, value)
+
+	if len(volumes) != 0 {
+		template = addVolumeToTemplate(tempDeployment, volumes)
+	} else {
+		template = tempDeployment
+	}
+
+	return template, valueFileGenerator{value: value, persistence: persistence}
 }
 
 func storageClassTemplate(storageClass storage.StorageClass) (string, valueFileGenerator) {
